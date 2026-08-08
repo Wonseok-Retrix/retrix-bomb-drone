@@ -1,0 +1,187 @@
+# ============================================================
+#  Object Tracking Drone - 학생 튜닝 파일
+#  이 파일만 수정하면 됩니다. 코드는 건드리지 않아도 동작합니다.
+# ============================================================
+
+camera:
+  # AI 카메라에 올릴 모델 (.rpk)
+  # 기본 제공 모델: /usr/share/imx500-models/ 안에 있음
+  # 직접 학습한 모델: ~/models/network.rpk 처럼 경로를 바꿔주세요
+  model: /usr/share/imx500-models/imx500_network_ssd_mobilenetv2_fpnlite_320x320_pp.rpk
+
+  # 라벨 파일. 기본 모델이면 assets/coco_labels.txt
+  # 직접 학습한 모델이면 Colab에서 받은 labels.txt
+  labels: assets/coco_labels.txt
+
+  # 추론 프레임레이트. 높을수록 반응이 빠르지만 Pi가 힘들어함
+  #   비행할 때  : 10 ~ 15  (이보다 낮으면 목표를 따라잡지 못합니다)
+  #   화면 볼 때 : 2 ~ 5    (tools/preview.py --fps 2 로 임시 지정 가능)
+  # ※ 이 값은 MAVLink 전송 주기와 무관합니다. 명령은 항상 send_rate 로 나갑니다.
+  fps: 12
+
+  # picamera2 자체 미리보기 창. Lite 이미지에는 데스크톱이 없으므로 false 로 둡니다.
+  # 화면은 tools/preview.py 를 실행하고 브라우저로 봅니다 (http://drone.local:8080)
+  preview: false
+
+
+detection:
+  # 쫓아갈 물체의 라벨 이름. 라벨 파일에 있는 이름과 정확히 같아야 함
+  # 예: person, sports ball, bottle ...
+  target_class: person
+
+  # 확신도 임계값 (0.0 ~ 1.0)
+  # 낮추면 잘 찾지만 오검출↑ / 높이면 정확하지만 자주 놓침
+  threshold: 0.50
+
+  # 겹친 박스를 합치는 기준. 보통 그대로 두면 됨
+  iou: 0.65
+
+  # 한 프레임에서 최대 몇 개까지 볼지
+  max_detections: 10
+
+  # ---- 모델마다 다른 출력 형식. 아래 표대로만 맞춰주면 됩니다 ----
+  #  ssd_mobilenetv2 / efficientdet : normalization=false, order=yx, postprocess=""
+  #  yolo11n_pp / yolov8n_pp        : normalization=true,  order=xy, postprocess=""
+  #  nanodet_plus (pp 없는 것)      : normalization=false, order=yx, postprocess="nanodet"
+  #  Colab에서 직접 학습한 YOLO     : normalization=true,  order=xy, postprocess=""
+  bbox_normalization: false
+  bbox_order: yx
+  postprocess: ""
+
+
+tracking:
+  # 박스 위치를 얼마나 부드럽게 만들지 (0.0 ~ 1.0)
+  # 0에 가까울수록 부드럽지만 느림 / 1에 가까울수록 민감하지만 떨림
+  smoothing: 0.4
+
+  # 이 시간(초) 동안 목표를 못 보면 "놓쳤다"고 판단하고 정지
+  lost_timeout: 1.0
+
+  # 여러 개가 보일 때 목표 선택 기준
+  #   confidence : 가장 확신도가 높은 것
+  #   largest    : 가장 큰 것 (= 가장 가까운 것)
+  #   nearest    : 직전 목표와 가장 가까운 것 (추천)
+  select: nearest
+
+
+control:
+  # ---- 어떤 제어기를 쓸지 ----
+  #   front : 전방 카메라, 사람 따라가기  ->  src/controller_front.py
+  #   down  : 하방 카메라, 과녁 따라가기  ->  src/controller_down.py
+  # 아래 두 블록은 완전히 별개입니다. 지금 쓰는 쪽만 만지면 됩니다.
+  mode: front
+
+  # ==========================================================
+  #  front : 전방 카메라로 사람 따라가기
+  #    좌우 오차 -> 기수 회전 / 크기 오차 -> 전후 / 상하 오차 -> 고도(옵션)
+  # ==========================================================
+  front:
+    # 얼마나 세게 반응할지 (P 게인). 키우면 빠르지만 흔들림(진동)이 생김
+    yaw_gain: 1.2        # 좌우 오차 -> 기수 회전 속도
+    forward_gain: 1.5    # 크기 오차 -> 전후 속도
+    vertical_gain: 0.8   # 상하 오차 -> 고도 속도
+
+    # 안전 한계값 (여기서부터는 절대 안 넘김)
+    max_yaw_rate: 45.0   # deg/s
+    max_forward: 2.0     # m/s
+    max_vertical: 0.5    # m/s
+
+    # 무시할 오차. 화면 중심에서 이만큼 안쪽이면 가만히 있음 (미세 떨림 방지)
+    deadband: 0.08       # 화면 절반 기준 비율 (0.08 = 8%)
+
+    # 유지할 거리. 화면 높이 대비 박스 높이가 이 값이 되도록 전후로 움직임
+    # 0.35 = 사람이 화면의 35% 를 차지하는 거리. 작을수록 멀리 떨어짐
+    target_size: 0.35
+    size_deadband: 0.05
+
+    # 고도 추종 사용 여부. 워크샵 첫 비행은 false 권장 (회전/전후만)
+    enable_vertical: false
+
+  # ==========================================================
+  #  down : 하방 카메라로 과녁 따라가기
+  #    좌우 오차 -> 좌우 이동 / 상하 오차 -> 전후 이동 / 크기 오차 -> 고도
+  #    기수는 돌리지 않습니다. 카메라 위쪽이 기수 방향을 향하도록 다세요.
+  # ==========================================================
+  down:
+    # 하방은 기체가 조금만 기울어도 화면이 크게 밀립니다.
+    # front 보다 게인과 한계값을 낮게 잡는 것이 안전합니다.
+    lateral_gain: 1.0    # 좌우 오차 -> 좌우 이동 속도
+    forward_gain: 1.0    # 상하 오차 -> 전후 이동 속도
+    vertical_gain: 0.5   # 크기 오차 -> 고도 속도
+
+    max_lateral: 1.0     # m/s
+    max_forward: 1.0     # m/s
+    max_vertical: 0.4    # m/s
+
+    deadband: 0.08
+
+    # 유지할 고도. 화면 높이 대비 과녁 박스 높이가 이 값이 되도록 오르내림
+    # ※ 이 값을 키우면 드론이 더 낮게 내려옵니다. 한 번에 0.05 씩만 올리세요
+    target_size: 0.35
+    size_deadband: 0.05
+
+
+# ============================================================
+#  서보 드로퍼 (과녁에 물건 떨어뜨리기)
+#  control.mode: down 일 때만 동작합니다. front 모드에서는 무시됩니다.
+#  서보는 FC 를 거치지 않고 라즈베리파이 GPIO 가 직접 제어합니다.
+#  (FC 서보 레일에서는 5V 전원만 받습니다. 접지는 반드시 Pi 와 공통으로)
+# ============================================================
+dropper:
+  # ★ 처음에는 false. 지상에서 tools/check_dropper.py 로 확인한 뒤 켜세요 ★
+  enable: false
+
+  pin: 18              # 신호선을 연결한 GPIO 번호 (BCM). GPIO18 = 물리핀 12
+
+  # 서보 자세 두 개. tools/check_dropper.py 로 찾아서 적으세요
+  closed_angle: 0      # 물건을 잡고 있는 각도
+  open_angle: 80       # 물건을 놓는 각도
+
+  open_seconds: 1.5    # 이 시간 동안 열어뒀다가 스스로 닫힙니다
+  once: true           # 한 비행에 한 번만 투하 (false 면 조건 맞을 때마다)
+
+  # 서보마다 펄스 폭이 다릅니다. 각도가 안 맞으면 이 값을 조절하세요
+  min_pulse_us: 500
+  max_pulse_us: 2500
+
+  # ---- 언제 놓을지 (src/release.py) ----
+  release:
+    # 과녁 중심이 화면 중앙에서 이만큼 안쪽이어야 함 (0.10 = 화면 절반의 10%)
+    # 작을수록 정확하지만 조건을 못 맞춰 계속 못 놓을 수 있습니다
+    align: 0.10
+
+    # 박스가 이 크기 이상이어야 함 = 충분히 낮게 내려왔다는 뜻
+    size_min: 0.30
+
+    # 위 조건이 이 시간(초) 동안 계속 유지되어야 놓습니다.
+    # 지나가다 우연히 중앙에 걸린 순간에 놓지 않기 위한 장치입니다
+    hold_seconds: 1.0
+
+    # 드로퍼가 카메라 바로 밑에 없을 때 조준점 보정 (기본 0 = 화면 정중앙)
+    # 드로퍼가 카메라보다 뒤에 있으면 aim_y 를 음수로 (과녁을 화면 위쪽에 두고 투하)
+    aim_x: 0.0
+    aim_y: 0.0
+
+
+mavlink:
+  # Pi <-> 비행 컨트롤러 연결
+  # UART 직결: /dev/serial0  (GPIO 14/15. install.sh 가 여기에 PL011 을 붙여줍니다)
+  # USB 연결:  /dev/ttyACM0
+  # SITL 시뮬: udpin:127.0.0.1:14550
+  connection: /dev/serial0
+  baud: 57600
+
+  # 명령 전송 주기 (Hz). ArduPilot은 3초 이상 끊기면 GUIDED를 멈춤
+  send_rate: 10
+
+
+safety:
+  # true 면 계산만 하고 실제 명령은 보내지 않음 (콘솔 출력만)
+  # ★ 처음에는 반드시 true 로 테스트하세요 ★
+  dry_run: true
+
+  # GUIDED 모드일 때만 명령을 보냄. 조종기로 모드를 빼면 즉시 정지
+  require_guided: true
+
+  # 시동(arm)이 걸려있을 때만 명령을 보냄
+  require_armed: true

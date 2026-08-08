@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.DS_Store
+
+# Obsidian 편집기 설정 (개인 환경)
+.obsidian/
+
+# 학습한 모델 파일 (용량이 큽니다)
+*.rpk
+packerOut.zip

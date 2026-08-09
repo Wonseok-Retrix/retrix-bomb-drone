@@ -29,10 +29,18 @@ def main():
     print(f"OK! system={master.target_system} component={master.target_component}\n")
 
     # 필요한 데이터를 4Hz 로 보내달라고 요청
-    master.mav.request_data_stream_send(
-        master.target_system, master.target_component,
-        mavutil.mavlink.MAV_DATA_STREAM_ALL, 4, 1,
-    )
+    # (PX4/ArduPilot 공통 방식인 SET_MESSAGE_INTERVAL 사용)
+    INTERVAL_US = 250000  # 4Hz = 250,000µs
+    for msg_id in (
+        mavutil.mavlink.MAVLINK_MSG_ID_SYS_STATUS,
+        mavutil.mavlink.MAVLINK_MSG_ID_GPS_RAW_INT,
+        mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE,
+    ):
+        master.mav.command_long_send(
+            master.target_system, master.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
+            msg_id, INTERVAL_US, 0, 0, 0, 0, 0,
+        )
 
     state = {}
     last = 0.0

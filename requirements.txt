@@ -1,5 +1,6 @@
 # Raspberry Pi OS Bookworm 에서는 picamera2 / pillow / simplejpeg / numpy 를
 # apt 로 설치합니다 (tools/install.sh 참고). OpenCV 는 사용하지 않습니다.
-# 이 파일은 pip 로 넣는 나머지 두 개뿐입니다.
+# 아래 두 개도 Pi 에서는 apt (python3-pymavlink / python3-yaml) 로 설치합니다.
+# 이 파일은 Pi 가 아닌 환경에서 참고용으로만 사용하세요.
 pymavlink>=2.4.41
 PyYAML>=6.0

@@ -2,7 +2,7 @@
 
 ## 1. OS 굽기
 
-Raspberry Pi Imager 프로그램에서 아래 항목을 설정합니다:
+[Raspberry Pi Imager](https://www.raspberrypi.com/software/) 프로그램에서 아래 항목을 설정합니다:
 
 - 기기: **Raspberry Pi Zero W**
 - OS: **Raspberry Pi OS Lite (32-bit)** — Bookworm
@@ -24,6 +24,7 @@ ssh pi@drone.local
 ## 3. 설치
 
 ```bash
+sudo apt install git
 git clone <이 저장소 주소> ~/ai-tracking-drone
 cd ~/ai-tracking-drone
 bash tools/install.sh
@@ -36,13 +37,14 @@ sudo reboot
 | -------------------------------------------------------- | ------------------------------------------------------- |
 | `imx500-all`                                             | AI 카메라 펌웨어 + 기본 모델(`/usr/share/imx500-models/`) + 패키징 도구 |
 | `python3-picamera2`, `python3-simplejpeg`, `python3-pil` | 카메라 구동 및 영상 렌더링 (apt 패키지로 설치)                        |
-| `pymavlink`, `python3-yaml`                              | 비행 컨트롤러 통신 및 설정 파일 읽기                                   |
+| `python3-pymavlink`, `python3-yaml`                      | 비행 컨트롤러 통신 및 설정 파일 읽기                                   |
 | `dtoverlay=disable-bt`                                   | 블루투스를 비활성화하여 안정적인 하드웨어 UART를 GPIO 핀으로 되돌림               |
 | raspi-config                                             | UART 활성화 및 시리얼 로그인 콘솔 비활성화                            |
 | `gpu_mem=64`                                             | 헤드리스 운영 환경에 최적화된 메모리 확보                               |
 
 > Raspberry Pi OS(Bookworm)는 시스템 파이썬 환경을 보호합니다(PEP 668).
-> `picamera2` 라이브러리를 apt 패키지로 활용하기 위해 별도의 venv(가상 환경)를 생성하지 않고 `pip3 install --break-system-packages` 명령으로 필요한 패키지를 설치합니다.
+> `picamera2` 라이브러리를 apt 패키지로 활용하기 위해 별도의 venv(가상 환경)를 만들지 않고, 필요한 파이썬 패키지도 모두 apt 로 설치합니다.
+> (OS Lite 에는 `pip3` 가 없기 때문에, apt 에 패키지가 없을 때만 `python3-pip` 를 설치한 뒤 `pip3 install --break-system-packages` 로 대체합니다.)
 
 ## 4. 카메라 확인
 
@@ -101,13 +103,13 @@ http://drone.local:8080
 
 ### 문제 해결 (접속이 되지 않을 때)
 
-| 증상                       | 원인                        | 해결 방안                                                 |
-| ------------------------ | ------------------------- | ----------------------------------------------------- |
-| Pi가 Wi-Fi에 연결되지 않음       | 공유기가 5GHz 전용인 경우          | 2.4GHz 대역을 활성화하세요. Zero 계열은 5GHz를 지원하지 않습니다             |
-| `drone.local` 접속 불가      | mDNS 미지원 (안드로이드, 구형 윈도우) | Pi에서 `hostname -I`로 IP를 확인한 후 `http://192.168.x.x:8080`으로 접속 |
-| 동일한 호스트명의 Pi가 여러 대 존재하는 경우 | `.local` 이름 충돌 발생        | 팀마다 호스트명을 다르게 지정하세요 (`drone01`, `drone02` 등)            |
-| SSH 접속은 되지만 브라우저 접속만 안 됨  | 공유기의 **클라이언트 격리(AP isolation)** | 게스트 네트워크 대신 일반 네트워크를 사용하거나 공유기 설정에서 격리를 해제하세요         |
-| 야외 환경이라 공유기가 없는 경우       | —                         | 스마트폰 핫스팟(2.4GHz)에 Pi와 노트북을 함께 연결하세요                  |
+| 증상                         | 원인                              | 해결 방안                                                        |
+| -------------------------- | ------------------------------- | ------------------------------------------------------------ |
+| Pi가 Wi-Fi에 연결되지 않음         | 공유기가 5GHz 전용인 경우                | 2.4GHz 대역을 활성화하세요. Zero 계열은 5GHz를 지원하지 않습니다                  |
+| `drone.local` 접속 불가        | mDNS 미지원 (안드로이드, 구형 윈도우)        | Pi에서 `hostname -I`로 IP를 확인한 후 `http://192.168.x.x:8080`으로 접속 |
+| 동일한 호스트명의 Pi가 여러 대 존재하는 경우 | `.local` 이름 충돌 발생               | 팀마다 호스트명을 다르게 지정하세요 (`drone01`, `drone02` 등)                 |
+| SSH 접속은 되지만 브라우저 접속만 안 됨   | 공유기의 **클라이언트 격리(AP isolation)** | 게스트 네트워크 대신 일반 네트워크를 사용하거나 공유기 설정에서 격리를 해제하세요                |
+| 야외 환경이라 공유기가 없는 경우         | —                               | 스마트폰 핫스팟(2.4GHz)에 Pi와 노트북을 함께 연결하세요                          |
 
 > preview 서버는 별도의 비밀번호 인증을 갖추고 있지 않습니다. 동일 네트워크 상의 사용자 누구나 영상 화면을 볼 수 있으므로, 공용 Wi-Fi 환경에서는 튜닝 완료 후 반드시 프로세스를 종료하세요.
 

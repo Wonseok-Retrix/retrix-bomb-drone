@@ -24,7 +24,13 @@ echo "== 3/5 파이썬 패키지 =="
 sudo apt install -y python3-yaml
 # gpiozero + lgpio = 서보 드로퍼를 GPIO 로 직접 제어하는 데 사용합니다
 sudo apt install -y python3-gpiozero python3-lgpio
-pip3 install --break-system-packages pymavlink
+# pymavlink 는 apt 패키지를 우선 사용합니다.
+# (Raspberry Pi OS Lite 에는 pip3 가 기본 설치되어 있지 않습니다)
+if ! sudo apt install -y python3-pymavlink; then
+  echo "-- apt 에 python3-pymavlink 가 없어 pip 로 설치합니다 --"
+  sudo apt install -y python3-pip
+  pip3 install --break-system-packages pymavlink
+fi
 
 echo "== 4/5 시리얼 포트 (비행 컨트롤러 연결) =="
 # Zero W / Zero 2 W 는 블루투스가 PL011(ttyAMA0)을 쓰고 있어서,

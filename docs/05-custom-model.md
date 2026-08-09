@@ -41,7 +41,7 @@
 2. New Project 생성 → 프로젝트 유형을 **Object Detection**으로 선택합니다.
 3. 수집한 이미지를 업로드하고 감지 대상 물체마다 바운딩 박스를 지정합니다.
 4. Generate 단계 진행 → 데이터 증강(Augmentation)은 Flip, Brightness 조정 정도로 최소화하여 설정합니다.
-5. Export Data 선택 → 포맷으로 **YOLOv11** 선택 → *show download code* 클릭 후 다운로드 코드를 복사합니다.
+5. 좌측 Dataset 탭 선택 후 모든 이미지 선택 → Export Data → Download Dataset → 포맷으로 **YOLOv11** 선택 → Export AS → Code Snippet → * show download code* 클릭 후 다운로드 코드를 복사합니다.
 
 ## 3. Google Colab 기반 모델 학습
 
@@ -56,7 +56,16 @@
 
 ## 4. 라즈베리파이 탑재 및 모델 설정
 
-Colab에서 다운로드한 `my_tracker_imx500.zip` 파일을 라즈베리파이로 복사한 후 터미널에서 다음 명령을 실행합니다:
+Colab에서 다운로드한 `my_tracker_imx500.zip` 파일을 라즈베리파이로 복사합니다. **내 PC의 터미널**에서 실행하세요 (파일이 받아진 폴더 기준):
+
+```bash
+scp my_tracker_imx500.zip pi@drone.local:~/
+```
+
+> `drone.local` 접속이 안 되면 라즈베리파이에서 `hostname -I`로 IP를 확인한 뒤 `scp my_tracker_imx500.zip pi@192.168.x.x:~/` 형태로 실행하세요.
+> 윈도우는 PowerShell에서 동일한 명령을 사용할 수 있습니다.
+
+이후 **라즈베리파이 SSH 터미널**에서 다음 명령을 실행합니다:
 
 ```bash
 mkdir -p ~/models && cd ~/models

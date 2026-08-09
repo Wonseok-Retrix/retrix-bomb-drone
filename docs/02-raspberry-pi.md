@@ -65,13 +65,13 @@ python3 tools/check_camera.py
 
 ### 문제 해결 (동작하지 않을 때)
 
-| 증상                     | 확인 및 조치 사항                                         |
-| ---------------------- | ------------------------------------------------- |
-| `No cameras available` | CSI 케이블 체결 상태 및 방향 확인. `rpicam-hello --list-cameras`로 점검 |
-| `imx500-models` 없음     | `sudo apt install imx500-all` 재실행                 |
-| `ModuleNotFoundError: No module named 'cv2'` | `sudo apt install -y python3-opencv` (설치에 5~10분 소요) |
-| 계속 멈춰 있음               | 전원 공급 부족. 정품 5V 전원 어댑터로 직접 급전하여 재시도              |
-| 검출은 되지만 응답이 느림         | `config.yaml`의 `camera.fps` 값을 10으로 하향 조정        |
+| 증상                                           | 확인 및 조치 사항                                               |
+| -------------------------------------------- | -------------------------------------------------------- |
+| `No cameras available`                       | CSI 케이블 체결 상태 및 방향 확인. `rpicam-hello --list-cameras`로 점검 |
+| `imx500-models` 없음                           | `sudo apt install imx500-all` 재실행                        |
+| `ModuleNotFoundError: No module named 'cv2'` | `sudo apt install -y python3-opencv` (설치에 5~10분 소요)      |
+| 계속 멈춰 있음                                     | 전원 공급 부족. 정품 5V 전원 어댑터로 직접 급전하여 재시도                      |
+| 검출은 되지만 응답이 느림                               | `config.yaml`의 `camera.fps` 값을 10으로 하향 조정                |
 
 ## 5. 브라우저를 통한 실시간 모니터링 및 튜닝
 

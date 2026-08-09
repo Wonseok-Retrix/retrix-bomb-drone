@@ -60,7 +60,7 @@ tools/
   check_dropper.py           3단계 점검: 서보 드로퍼
   preview.py                 브라우저로 박스를 보면서 튜닝
 notebooks/
-  finetune_imx500_yolo.ipynb Colab 파인튜닝 → packerOut.zip
+  finetune_imx500_yolo.ipynb  Colab 학습(사진 10여 장 + 합성 증강) → packerOut.zip
 assets/
   coco_labels.txt            기본 모델(COCO 80종) 라벨
 ```

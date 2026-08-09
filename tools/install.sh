@@ -15,8 +15,11 @@ sudo apt update && sudo apt full-upgrade -y
 
 echo "== 2/5 IMX500 AI 카메라 =="
 # imx500-all = 카메라 펌웨어 + 기본 모델(/usr/share/imx500-models) + .rpk 포장 도구
-# OpenCV 는 설치하지 않습니다. picamera2 는 pillow + simplejpeg 만 사용합니다.
 sudo apt install -y imx500-all python3-picamera2 python3-simplejpeg python3-pil
+# picamera2.devices.imx500 는 __init__ 에서 postprocess 모듈들을 import 하고,
+# 그 모듈들이 cv2 를 요구합니다. 우리 코드가 OpenCV 를 직접 쓰지 않아도
+# IMX500 클래스를 import 하려면 python3-opencv 가 있어야 합니다.
+sudo apt install -y python3-opencv
 
 echo "== 3/5 파이썬 패키지 =="
 # Bookworm 은 시스템 파이썬을 보호합니다(PEP 668).

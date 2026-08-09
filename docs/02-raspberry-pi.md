@@ -37,14 +37,11 @@ sudo reboot
 | -------------------------------------------------------- | ------------------------------------------------------- |
 | `imx500-all`                                             | AI 카메라 펌웨어 + 기본 모델(`/usr/share/imx500-models/`) + 패키징 도구 |
 | `python3-picamera2`, `python3-simplejpeg`, `python3-pil` | 카메라 구동 및 영상 렌더링 (apt 패키지로 설치)                        |
+| `python3-opencv`                                         | picamera2 의 IMX500 모듈이 import 시점에 요구하는 의존성                |
 | `python3-pymavlink`, `python3-yaml`                      | 비행 컨트롤러 통신 및 설정 파일 읽기                                   |
 | `dtoverlay=disable-bt`                                   | 블루투스를 비활성화하여 안정적인 하드웨어 UART를 GPIO 핀으로 되돌림               |
 | raspi-config                                             | UART 활성화 및 시리얼 로그인 콘솔 비활성화                            |
 | `gpu_mem=64`                                             | 헤드리스 운영 환경에 최적화된 메모리 확보                               |
-
-> Raspberry Pi OS(Bookworm)는 시스템 파이썬 환경을 보호합니다(PEP 668).
-> `picamera2` 라이브러리를 apt 패키지로 활용하기 위해 별도의 venv(가상 환경)를 만들지 않고, 필요한 파이썬 패키지도 모두 apt 로 설치합니다.
-> (OS Lite 에는 `pip3` 가 없기 때문에, apt 에 패키지가 없을 때만 `python3-pip` 를 설치한 뒤 `pip3 install --break-system-packages` 로 대체합니다.)
 
 ## 4. 카메라 확인
 
@@ -72,6 +69,7 @@ python3 tools/check_camera.py
 | ---------------------- | ------------------------------------------------- |
 | `No cameras available` | CSI 케이블 체결 상태 및 방향 확인. `rpicam-hello --list-cameras`로 점검 |
 | `imx500-models` 없음     | `sudo apt install imx500-all` 재실행                 |
+| `ModuleNotFoundError: No module named 'cv2'` | `sudo apt install -y python3-opencv` (설치에 5~10분 소요) |
 | 계속 멈춰 있음               | 전원 공급 부족. 정품 5V 전원 어댑터로 직접 급전하여 재시도              |
 | 검출은 되지만 응답이 느림         | `config.yaml`의 `camera.fps` 값을 10으로 하향 조정        |
 

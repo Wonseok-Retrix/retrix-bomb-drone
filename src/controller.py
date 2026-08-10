@@ -4,7 +4,7 @@
 
     목표가 화면 오른쪽에 있다   ->  오른쪽으로 이동한다        (right)
     목표가 화면 위쪽에 있다     ->  앞으로 이동한다            (forward)
-    박스가 목표보다 작다 (높다) ->  고도를 낮춘다              (vertical)
+    박스가 목표보다 작다 (높다) ->  고도를 낮춘다              (down)
 
 기수는 돌리지 않습니다(yaw = 0). 옆으로 미끄러지듯 움직여 과녁 위에 머무는 것이
 이 모드의 성격입니다. 그래서 **카메라 위쪽이 기수 방향을 향하도록** 달아야
@@ -16,6 +16,23 @@ P 제어는 "오차에 비례해서 반응한다"가 전부입니다.
 게인(gain)을 키우면 빠르지만 흔들리고, 줄이면 안정적이지만 굼뜹니다.
 
     명령 = 오차 x 게인 x 최대속도      (단, 최대속도를 넘지 않음)
+
+
+★ 느린 카메라(1~2 fps)를 위한 감쇠
+------------------------------------------------------------------
+이 카메라는 초당 1~2장밖에 못 줍니다. 즉 한 번 본 위치는 최대 1초까지
+"옛날 정보"인 채로 남습니다. 그 사이에 같은 속도로 계속 밀고 나가면
+목표를 지나쳐버리고(오버슈트), 다음 프레임에서 반대로 꺾으면서
+좌우로 크게 흔들리게 됩니다.
+
+그래서 명령에 **나이(age)** 를 곱합니다.
+
+    age <= stale_hold            : 그대로 (방금 본 정보)
+    stale_hold ~ stale_stop      : 선형으로 줄어듦
+    age >= stale_stop            : 0 (완전 정지)
+
+결과적으로 "한 프레임 보고 -> 조금 움직이고 -> 스스로 멈춰서 기다리기" 가 됩니다.
+느리지만 절대 폭주하지 않습니다. 정확도보다 안정성을 택한 설정입니다.
 """
 
 from command import Command
@@ -46,9 +63,29 @@ class Controller:
         self.target_size = c["target_size"]
         self.size_deadband = c["size_deadband"]
 
-    def compute(self, target):
-        """Target -> Command. target 이 None 이면 정지 명령(= 제자리 호버)."""
+        self.stale_hold = c["stale_hold"]
+        self.stale_stop = c["stale_stop"]
+
+    def freshness(self, age):
+        """목표 정보의 나이 -> 명령에 곱할 비율 (1.0 ~ 0.0)."""
+        if age <= self.stale_hold:
+            return 1.0
+        if age >= self.stale_stop:
+            return 0.0
+        span = self.stale_stop - self.stale_hold
+        return 1.0 - (age - self.stale_hold) / span
+
+    def compute(self, target, age=0.0):
+        """Target -> Command.
+
+        target 이 None 이거나 너무 오래된 정보면 정지 명령(= 제자리 호버).
+        age 는 이 목표를 마지막으로 실제로 본 뒤 흐른 시간(초)입니다.
+        """
         if target is None:
+            return Command()
+
+        scale = self.freshness(age)
+        if scale <= 0.0:
             return Command()
 
         # 1) 좌우: 목표가 오른쪽에 있으면 오른쪽으로 이동 (기수는 그대로)
@@ -63,4 +100,9 @@ class Controller:
         err_size = _deadband(self.target_size - target.size, self.size_deadband)
         down = _clamp(err_size * self.vertical_gain * self.max_vertical, self.max_vertical)
 
-        return Command(forward=forward, right=right, down=down)
+        # 4) 정보가 오래될수록 힘을 뺍니다 (위 주석 참고)
+        return Command(
+            forward=forward * scale,
+            right=right * scale,
+            down=down * scale,
+        )

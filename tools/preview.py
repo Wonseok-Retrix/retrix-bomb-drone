@@ -13,7 +13,7 @@ Pi 에 모니터를 연결할 필요가 없습니다 (Lite 이미지에서도 �
 
   초록 박스   = 검출된 모든 물체
   빨간 박스   = 현재 추적 중인 목표
-  회색 세로띠 = 데드밴드 (이 안에 있으면 회전 명령 없음)
+  회색 세로띠 = 데드밴드 (이 안에 있으면 좌우 이동 명령 없음)
 
 ★ 지상에서 눈으로 확인하는 용도입니다. 비행 중에는 실행하지 마세요.
 """
@@ -167,6 +167,9 @@ def main():
         while True:
             detections = det.read()
             target = trk.update(detections)
+            # age 를 넘기지 않습니다(=0). 방금 본 프레임 기준의 '온전한' 명령을
+            # 보여줘야 부호와 크기를 확인할 수 있기 때문입니다.
+            # 비행 중에는 track_and_follow.py 가 나이에 따라 이 값을 줄입니다.
             cmd = ctl.compute(target)
 
             frame = det.last_frame

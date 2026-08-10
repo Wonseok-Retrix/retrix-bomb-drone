@@ -2,6 +2,9 @@
 
 검출(detection)은 매 프레임 독립적이라 깜빡거립니다.
 추적(tracking)은 그걸 이어붙여서 하나의 목표로 만들어 줍니다.
+
+카메라가 1~2 fps 로 느리기 때문에, 목표에는 **언제 실제로 봤는지**(seen_at)를
+같이 담아 보냅니다. 제어기가 그 나이를 보고 명령의 세기를 줄입니다.
 """
 
 import time
@@ -10,10 +13,16 @@ import time
 class Target:
     """추적 중인 목표 하나. 화면 기준 정규화 좌표를 제공합니다."""
 
-    def __init__(self, box, conf, frame_size):
+    def __init__(self, box, conf, frame_size, seen_at):
         self.box = box
         self.conf = conf
         self.frame_w, self.frame_h = frame_size
+        self.seen_at = seen_at   # 이 목표를 마지막으로 실제로 본 시각 (monotonic)
+
+    @property
+    def age(self):
+        """마지막으로 실제로 본 뒤 흐른 시간 [초]."""
+        return time.monotonic() - self.seen_at
 
     @property
     def offset_x(self):
@@ -69,7 +78,7 @@ class Tracker:
 
         if self._box is None:
             return None
-        return Target(self._box, self._conf, self.frame_size)
+        return Target(self._box, self._conf, self.frame_size, self._last_seen)
 
     def _pick(self, candidates):
         if self.select == "largest":

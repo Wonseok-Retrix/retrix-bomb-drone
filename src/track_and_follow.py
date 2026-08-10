@@ -6,12 +6,18 @@
     python3 src/track_and_follow.py --live         # dry_run 해제 (실제 명령 전송)
 
 구조:
-    [카메라 스레드]  검출 --> 추적 --> 목표 저장        (camera.fps 속도)
-    [메인 루프]      목표 --> P제어 --> MAVLink 전송    (mavlink.send_rate 속도)
+    [카메라 스레드]  검출 --> 추적 --> 목표 저장        (camera.fps 속도, 1~2 fps)
+    [메인 루프]      목표 --> P제어 --> MAVLink 전송    (mavlink.send_rate 속도, 10Hz)
 
 두 개를 분리한 이유:
-  ArduPilot 은 GUIDED 명령이 3초 이상 끊기면 스스로 멈춥니다.
-  카메라가 느리거나 한 프레임 늦어져도 명령 스트림은 일정하게 유지되어야 합니다.
+  PX4 는 OFFBOARD setpoint 가 COM_OF_LOSS_T(기본 1초) 이상 끊기면 모드를 빠져나갑니다.
+  게다가 OFFBOARD 는 "들어가기 전부터" setpoint 가 흐르고 있어야 진입이 승인됩니다.
+  카메라가 1~2 fps 로 아무리 느려도 명령 스트림은 10Hz 로 일정하게 유지되어야 합니다.
+
+카메라가 느린 것에 대한 대응:
+  프레임 사이(최대 1초)에는 볼 수 있는 게 없습니다. 그 시간 동안 같은 속도로
+  계속 밀면 목표를 지나칩니다. 그래서 목표에 붙은 나이(age)를 제어기에 넘겨
+  명령의 세기를 점점 줄입니다. 자세한 내용은 controller.py 위쪽 주석 참고.
 """
 
 import argparse
@@ -76,12 +82,16 @@ class VisionThread:
                 self._n_det = len(detections)
                 self._updated_at = time.monotonic()
 
-    def latest(self, max_age):
-        """최근 목표를 돌려줍니다. max_age 초보다 오래됐으면 None (= 정지)."""
+    def latest(self, stall_timeout):
+        """(목표, 검출 개수, 카메라 멈춤 여부) 를 돌려줍니다.
+
+        목표가 얼마나 오래된 정보인지는 target.age 에 들어있고, 그걸로 명령 세기를
+        줄이는 건 제어기가 합니다. 여기서 보는 건 '카메라 자체가 죽었는가' 뿐입니다.
+        """
         with self._lock:
             target, n_det, updated_at = self._target, self._n_det, self._updated_at
-        if updated_at == 0.0 or time.monotonic() - updated_at > max_age:
-            return None, n_det, True  # stale
+        if updated_at == 0.0 or time.monotonic() - updated_at > stall_timeout:
+            return None, n_det, True   # 카메라가 프레임을 아예 못 주고 있음
         return target, n_det, False
 
     def stop(self):
@@ -122,9 +132,9 @@ def main():
     vision.start()
 
     period = 1.0 / cfg["mavlink"]["send_rate"]
-    # 카메라가 이 시간 넘게 조용하면 목표를 버립니다.
-    # 프레임 간격의 3배, 최소 1초. fps 가 낮아도 알아서 늘어납니다.
-    max_age = max(1.0, 3.0 / cfg["camera"]["fps"])
+    # 카메라가 이 시간 넘게 프레임을 아예 못 주면 "죽었다"고 보고 정지합니다.
+    # 목표가 조금 오래된 것과는 다른 이야기입니다 (그건 controller 가 감쇠로 처리).
+    stall_timeout = cfg["camera"]["stall_timeout"]
 
     last_log = 0.0
     was_ready = False
@@ -133,21 +143,23 @@ def main():
         while True:
             loop_start = time.monotonic()
 
-            target, n_det, stale = vision.latest(max_age)
-            cmd = controller.compute(target)
+            target, n_det, stalled = vision.latest(stall_timeout)
+            age = target.age if target is not None else float("inf")
+            cmd = controller.compute(target, age)
 
             if link is not None:
                 link.poll()
                 ready, reason = link.ready_to_command()
                 if ready and not was_ready:
-                    link.statustext("TRACKING: guided control ON")
+                    link.statustext("TRACKING: offboard control ON")
                 was_ready = ready
 
                 if not ready:
                     cmd = Command()
 
                 # 목표가 없어도 '정지' 명령을 계속 보내야 합니다.
-                # 명령이 끊기면 ArduPilot 이 GUIDED 를 종료합니다.
+                # PX4 는 setpoint 가 끊기면 OFFBOARD 를 빠져나가고,
+                # 애초에 setpoint 가 흐르고 있어야 OFFBOARD 진입을 허가합니다.
                 link.send_velocity(cmd)
             else:
                 ready, reason = False, "MAVLink 비활성"
@@ -161,7 +173,7 @@ def main():
 
             now = time.monotonic()
             if now - last_log > 0.5:
-                _log(target, cmd, reason, n_det, stale)
+                _log(target, cmd, reason, n_det, stalled, controller)
                 if use_dropper:
                     print(f"     드로퍼: {judge.reason}"
                           f"{' | 투하 완료' if dropper.dropped else ''}")
@@ -179,15 +191,17 @@ def main():
         detector.close()
 
 
-def _log(target, cmd, reason, n_det, stale):
-    if stale:
+def _log(target, cmd, reason, n_det, stalled, controller):
+    if stalled:
         print(f"[!!] 카메라 정지 (프레임 안 들어옴) -> 정지 명령 | {reason}")
     elif target is None:
         print(f"[--] 목표 없음 (검출 {n_det}개) | {reason}")
     else:
+        age = target.age
         print(
             f"[OK] x={target.offset_x:+.2f} y={target.offset_y:+.2f} "
             f"size={target.size:.2f} conf={target.conf:.2f} "
+            f"age={age:.2f}s x{controller.freshness(age):.2f} "
             f"-> fwd={cmd.forward:+.2f} right={cmd.right:+.2f} down={cmd.down:+.2f}m/s "
             f"yaw={cmd.yaw_rate:+.1f}deg/s | {reason}"
         )

@@ -1,14 +1,19 @@
 """언제 물건을 떨어뜨릴지 판단하는 파일.
 
-과녁 위에 "충분히 잘" 올라갔는지만 봅니다. 조건은 네 개입니다.
+과녁 위에 "충분히 잘" 올라갔는지만 봅니다. 조건은 다섯 개입니다.
 
     1. 과녁이 보인다
-    2. 과녁이 화면 중앙에 있다            (align  보다 오차가 작다)
-    3. 충분히 낮게 내려왔다               (박스 크기가 size_min 보다 크다)
-    4. 위 상태가 hold_seconds 동안 유지됐다
+    2. 과녁 정보가 방금 것이다            (나이가 max_age 보다 어리다)
+    3. 과녁이 화면 중앙에 있다            (align  보다 오차가 작다)
+    4. 충분히 낮게 내려왔다               (박스 크기가 size_min 보다 크다)
+    5. 위 상태가 hold_seconds 동안 유지됐다
 
 하나라도 깨지면 타이머는 0으로 돌아갑니다. 지나가면서 우연히 중앙에 걸린 순간에
 떨어뜨리지 않기 위해서입니다.
+
+2번이 있는 이유: 메인 루프는 10Hz 로 도는데 카메라는 1~2 fps 라서, 조건 검사는
+같은 프레임을 여러 번 다시 보게 됩니다. 나이를 안 보면 옛날 한 장으로 hold 타이머가
+끝까지 차버립니다. max_age 는 카메라 주기보다 조금 길게 잡으세요.
 
 드로퍼가 카메라 바로 밑에 있지 않으면 aim_x / aim_y 로 조준점을 옮깁니다.
 (예: 드로퍼가 카메라보다 뒤에 달렸으면 과녁을 화면 위쪽에 두고 놔야 합니다)
@@ -23,6 +28,7 @@ class ReleaseJudge:
         self.align = r["align"]
         self.size_min = r["size_min"]
         self.hold_seconds = r["hold_seconds"]
+        self.max_age = r["max_age"]
         self.aim_x = r["aim_x"]
         self.aim_y = r["aim_y"]
 
@@ -52,9 +58,13 @@ class ReleaseJudge:
 
     def _check(self, target, ready):
         if not ready:
-            return False, "제어 불가 상태"       # GUIDED 아님 / 시동 안 걸림
+            return False, "제어 불가 상태"       # OFFBOARD 아님 / 시동 안 걸림
         if target is None:
             return False, "과녁 안 보임"
+
+        age = target.age
+        if age > self.max_age:
+            return False, f"과녁 정보가 오래됨 ({age:.1f}s)"
 
         dx = target.offset_x - self.aim_x
         dy = target.offset_y - self.aim_y

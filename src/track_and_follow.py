@@ -25,7 +25,7 @@ import yaml
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from command import Command
-from controller import make_controller
+from controller import Controller
 from detector import Detector
 from dropper import Dropper
 from mavlink_link import MavlinkLink
@@ -100,14 +100,9 @@ def main():
     if args.live:
         cfg["safety"]["dry_run"] = False
 
-    # 투하는 하방 카메라(과녁)일 때만 의미가 있습니다.
-    # 사람을 따라가는 front 모드에서는 설정과 무관하게 절대 동작하지 않습니다.
-    use_dropper = cfg["control"]["mode"] == "down" and cfg["dropper"]["enable"]
-    if cfg["control"]["mode"] != "down":
-        cfg["dropper"]["enable"] = False
+    use_dropper = cfg["dropper"]["enable"]
 
     print("=" * 60)
-    print(f"  제어 모드   : {cfg['control']['mode']}")
     print(f"  목표 클래스 : {cfg['detection']['target_class']}")
     print(f"  모델        : {os.path.basename(cfg['camera']['model'])}")
     print(f"  카메라      : {cfg['camera']['fps']} fps")
@@ -118,7 +113,7 @@ def main():
 
     detector = Detector(cfg)
     tracker = Tracker(cfg, detector.frame_size)
-    controller = make_controller(cfg)
+    controller = Controller(cfg["control"])
     dropper = Dropper(cfg)
     judge = ReleaseJudge(cfg)
     link = None if args.no_mavlink else MavlinkLink(cfg)

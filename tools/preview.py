@@ -33,7 +33,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
 from track_and_follow import load_config  # noqa: E402
-from controller import make_controller  # noqa: E402
+from controller import Controller  # noqa: E402
 from detector import Detector  # noqa: E402
 from tracker import Tracker  # noqa: E402
 
@@ -149,9 +149,9 @@ def main():
     det = Detector(cfg)
     det.keep_frame = True  # read() 가 영상도 같이 챙겨오도록
     trk = Tracker(cfg, det.frame_size)
-    ctl = make_controller(cfg)
+    ctl = Controller(cfg["control"])
     w, h = det.frame_size
-    band = int(cfg["control"][cfg["control"]["mode"]]["deadband"] * w / 2)
+    band = int(cfg["control"]["deadband"] * w / 2)
 
     server = ThreadingHTTPServer(("", args.port), Handler)
     server.daemon_threads = True

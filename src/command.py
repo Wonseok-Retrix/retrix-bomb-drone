@@ -1,6 +1,6 @@
 """비행 컨트롤러에 보낼 속도 명령 한 덩어리.
 
-제어기(controller_front.py / controller_down.py)가 이걸 만들고,
+제어기(controller.py)가 이걸 만들고,
 mavlink_link.py 가 이걸 그대로 MAVLink 로 보냅니다.
 """
 

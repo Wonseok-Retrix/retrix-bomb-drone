@@ -24,13 +24,34 @@ import threading
 import time
 
 import yaml
+from pymavlink import mavutil
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# 수신 화면에 필요한 메시지들. PX4 는 ArduPilot 의 REQUEST_DATA_STREAM 을
+# 무시하므로 MAV_CMD_SET_MESSAGE_INTERVAL 로 하나씩 요청합니다.
+WANTED = [
+    mavutil.mavlink.MAVLINK_MSG_ID_SYS_STATUS,
+    mavutil.mavlink.MAVLINK_MSG_ID_BATTERY_STATUS,
+    mavutil.mavlink.MAVLINK_MSG_ID_GPS_RAW_INT,
+    mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE,
+]
 
 
 def usage():
     print(__doc__)
     sys.exit(1)
+
+
+def request_messages(master, hz=4):
+    """주요 상태 메시지를 FC 에 요청 (check_mavlink.py 와 동일 방식)."""
+    interval_us = int(1_000_000 / hz)
+    for msg_id in WANTED:
+        master.mav.command_long_send(
+            master.target_system, master.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
+            msg_id, interval_us, 0, 0, 0, 0, 0,
+        )
 
 
 def send_motor_stop(master, motor):
@@ -134,10 +155,6 @@ def main():
         print(f"\n모터 {motor}번 정지 모드로 실행합니다.\n")
 
     # ---- MAVLink 연결 ----
-    # pymavlink 은 실제 명령 실행 시점에만 필요하므로 여기서 import.
-    # (인자 검증/사용법 출력은 pymavlink 없이도 동작하게 하기 위함)
-    from pymavlink import mavutil
-
     with open(os.path.join(ROOT, "config.yaml")) as f:
         m = yaml.safe_load(f)["mavlink"]
 
@@ -146,7 +163,11 @@ def main():
 
     print("하트비트 대기중...")
     master.wait_heartbeat()
-    print(f"OK! system={master.target_system} component={master.target_component}\n")
+    print(f"OK! system={master.target_system} component={master.target_component}")
+
+    # 상태 메시지 요청 (HEARTBEAT 는 항상 오므로 제외)
+    request_messages(master)
+    print("상태 메시지 요청 완료 (SYS_STATUS, BATTERY_STATUS, GPS, ATTITUDE @4Hz)\n")
 
     # ---- 수신 스레드 시작 ----
     t = threading.Thread(target=rx_loop, args=(master,), daemon=True)

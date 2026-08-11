@@ -60,7 +60,7 @@ def send_motor_stop(master, motor):
         master.target_system, master.target_component,
         mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST, 0,
         motor,
-        mavutil.mavlink.MAV_MOTOR_TEST_THROTTLE_PERCENT,
+        0,          # param2: MAV_MOTOR_TEST_THROTTLE_PERCENT (스로틀 % 단위)
         0,          # throttle 0%
         0,          # duration 0 -> 즉시 정지
         1,          # 모터 1개만
@@ -74,7 +74,7 @@ def send_motor_run(master, motor, speed):
         master.target_system, master.target_component,
         mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST, 0,
         motor,
-        mavutil.mavlink.MAV_MOTOR_TEST_THROTTLE_PERCENT,
+        0,          # param2: MAV_MOTOR_TEST_THROTTLE_PERCENT (스로틀 % 단위)
         float(speed),
         -1,         # 무한 지속
         1,          # 모터 1개만

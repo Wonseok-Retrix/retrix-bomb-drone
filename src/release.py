@@ -58,7 +58,7 @@ class ReleaseJudge:
 
     def _check(self, target, ready):
         if not ready:
-            return False, "제어 불가 상태"       # OFFBOARD 아님 / 시동 안 걸림
+            return False, "제어 불가 상태"       # GUIDED 아님 / 시동 안 걸림
         if target is None:
             return False, "과녁 안 보임"
 

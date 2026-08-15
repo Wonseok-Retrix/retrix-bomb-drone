@@ -8,7 +8,7 @@ Raspberry Pi AI Camera(Sony IMX500), 비행 컨트롤러(FC), 컴패니언 컴�
 
 | 구분 | 부품 | 비고 및 주요 역할 |
 | :--- | :--- | :--- |
-| **비행 컨트롤러(FC)** | MicoAir 743 v2 | PX4 펌웨어 탑재, 기체 자세 및 속도 제어 |
+| **비행 컨트롤러(FC)** | MicoAir 743 v2 | ArduCopter 펌웨어 탑재, 기체 자세 및 속도 제어 |
 | **컴패니언 컴퓨터** | Raspberry Pi Zero W (또는 Zero 2 W) | 제어 명령 계산 및 MAVLink 송신 전담 |
 | **AI 카메라** | Raspberry Pi AI Camera (Sony IMX500) | 온칩 신경망 객체 검출 (하방 장착) |
 | **카메라 케이블** | 22핀(미니) ↔ 15핀 CSI 변환 케이블 | Zero 계열 전용 미니 커넥터 사용 |

@@ -171,27 +171,20 @@ mavlink:
   connection: /dev/serial0
   baud: 57600
 
-  # 명령 전송 주기 (Hz).
-  # PX4 는 setpoint 가 COM_OF_LOSS_T(기본 1초) 이상 끊기면 OFFBOARD 를 빠져나갑니다.
-  # ArduPilot(3초)보다 빡빡하므로 이 값을 낮추지 마세요. 최소 5, 권장 10 이상.
+  # ArduCopter GUIDED 속도 명령 전송 주기 (Hz).
+  # GUID_TIMEOUT(기본 3초) 안에 새 명령이 없으면 기체가 정지합니다.
+  # 지연과 패킷 유실을 고려해 최소 5, 권장 10 이상을 유지하세요.
   # ※ 카메라 fps 와 무관합니다. 카메라가 1 fps 여도 명령은 10Hz 로 계속 나갑니다.
   send_rate: 10
-
-  # 기수 방향(ATTITUDE) 수신 주기 (Hz).
-  # PX4 는 지구 기준 속도만 확실히 받아주므로, 화면 기준 명령을 지구 기준으로
-  # 돌리려면 기수 방향이 필요합니다. 이게 안 오면 명령을 아예 보내지 않습니다.
-  attitude_rate: 10
-
 
 safety:
   # true 면 계산만 하고 실제 명령은 보내지 않음 (콘솔 출력만)
   # ★ 처음에는 반드시 true 로 테스트하세요 ★
-  # ※ PX4 주의: dry_run 이면 setpoint 가 안 나가므로 OFFBOARD 진입 자체가 거부됩니다.
-  #   OFFBOARD 전환까지 확인하려면 프로펠러를 뺀 채 --live 로 실행하세요.
+  # dry_run 상태에서도 GUIDED 모드 표시는 확인할 수 있지만 속도 명령은 전송하지 않습니다.
   dry_run: true
 
-  # OFFBOARD 모드일 때만 명령을 보냄. 조종기로 모드를 빼면 즉시 정지
-  require_offboard: true
+  # GUIDED 모드일 때만 추적 명령을 보냄. 다른 모드로 바꾸면 즉시 정지 명령으로 전환
+  require_guided: true
 
   # 시동(arm)이 걸려있을 때만 명령을 보냄
   require_armed: true

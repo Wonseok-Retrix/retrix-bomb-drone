@@ -1,6 +1,6 @@
 # Object Tracking Drone 워크샵 예제
 
-Raspberry Pi AI Camera(Sony IMX500)로 물체를 감지하고, PX4 기반 자율비행 드론이 이를 추적하도록 구현된 교육용 예제입니다.
+Raspberry Pi AI Camera(Sony IMX500)로 물체를 감지하고, ArduCopter 기반 자율비행 드론이 이를 추적하도록 구현된 교육용 예제입니다.
 
 ---
 
@@ -10,7 +10,7 @@ Raspberry Pi AI Camera(Sony IMX500)로 물체를 감지하고, PX4 기반 자율
 | :--- | :--- | :--- |
 | **01** | [하드웨어 & 배선](docs/01-hardware.md) | 주요 부품 구성 및 CSI / UART / 서보 배선 |
 | **02** | [라즈베리파이 세팅](docs/02-raspberry-pi.md) | OS 설치, 자동 설치 스크립트 실행, 카메라 점검 및 웹 모니터링 |
-| **03** | [비행 컨트롤러 설정](docs/03-flight-controller.md) | PX4 파라미터 설정 및 MAVLink 통신 연결 |
+| **03** | [비행 컨트롤러 설정](docs/03-flight-controller.md) | ArduCopter 파라미터 설정 및 MAVLink 통신 연결 |
 | **04** | [비행 & 튜닝](docs/04-flight-and-tuning.md) | 단계별 비행 검증, 튜닝 가이드, 필수 비행 안전수칙 |
 | **05** | [내 모델 만들기](docs/05-custom-model.md) | 데이터 수집, Colab 파인튜닝, .rpk 패키징 및 과녁 자동 투하 |
 
@@ -85,7 +85,7 @@ assets/
 - [pymavlink 라이브러리 예제](https://github.com/ArduPilot/pymavlink/tree/master/examples)
 - [Raspberry Pi AI Camera 공식 문서](https://www.raspberrypi.com/documentation/accessories/ai-camera.html)
 - [Ultralytics Sony IMX500 Export 가이드](https://docs.ultralytics.com/integrations/sony-imx500/)
-- [PX4 Autopilot — Offboard Mode 공식 문서](https://docs.px4.io/main/en/flight_modes/offboard.html)
-- [PX4 Autopilot — MAVLink Peripherals 가이드](https://docs.px4.io/main/en/peripherals/mavlink_peripherals.html)
-
+- [ArduPilot Copter — Guided Mode](https://ardupilot.org/copter/docs/ac2_guidedmode.html)
+- [ArduPilot — Copter Commands in Guided Mode](https://ardupilot.org/dev/docs/copter-commands-in-guided-mode.html)
+- [ArduPilot — MicoAir743v2](https://ardupilot.org/copter/docs/common-MicoAir743v2.html)
 

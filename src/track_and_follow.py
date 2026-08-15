@@ -10,9 +10,8 @@
     [메인 루프]      목표 --> P제어 --> MAVLink 전송    (mavlink.send_rate 속도, 10Hz)
 
 두 개를 분리한 이유:
-  PX4 는 OFFBOARD setpoint 가 COM_OF_LOSS_T(기본 1초) 이상 끊기면 모드를 빠져나갑니다.
-  게다가 OFFBOARD 는 "들어가기 전부터" setpoint 가 흐르고 있어야 진입이 승인됩니다.
-  카메라가 1~2 fps 로 아무리 느려도 명령 스트림은 10Hz 로 일정하게 유지되어야 합니다.
+  ArduCopter GUIDED 속도 명령은 GUID_TIMEOUT(기본 3초) 동안 끊기면 기체가 정지합니다.
+  카메라가 1~2 fps 로 느려도 명령 스트림은 10Hz 로 일정하게 유지되어야 합니다.
 
 카메라가 느린 것에 대한 대응:
   프레임 사이(최대 1초)에는 볼 수 있는 게 없습니다. 그 시간 동안 같은 속도로
@@ -151,15 +150,14 @@ def main():
                 link.poll()
                 ready, reason = link.ready_to_command()
                 if ready and not was_ready:
-                    link.statustext("TRACKING: offboard control ON")
+                    link.statustext("TRACKING: guided control ON")
                 was_ready = ready
 
                 if not ready:
                     cmd = Command()
 
-                # 목표가 없어도 '정지' 명령을 계속 보내야 합니다.
-                # PX4 는 setpoint 가 끊기면 OFFBOARD 를 빠져나가고,
-                # 애초에 setpoint 가 흐르고 있어야 OFFBOARD 진입을 허가합니다.
+                # 목표가 없어도 GUIDED 상태에서는 '정지' 명령을 계속 보냅니다.
+                # 통신이 끊기면 ArduCopter의 GUID_TIMEOUT 안전 동작이 정지시킵니다.
                 link.send_velocity(cmd)
             else:
                 ready, reason = False, "MAVLink 비활성"

@@ -38,7 +38,7 @@ ssh pi@drone.local
 
 ```bash
 sudo apt update && sudo apt install -y git
-git clone <저장소 주소> ~/ai-tracking-drone
+git clone https://github.com/Wonseok-Retrix/retrix-bomb-drone ~/ai-tracking-drone
 cd ~/ai-tracking-drone
 bash tools/install.sh
 sudo reboot

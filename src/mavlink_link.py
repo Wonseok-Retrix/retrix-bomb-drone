@@ -76,10 +76,23 @@ class MavlinkLink:
         self.require_guided = s["require_guided"]
         self.require_armed = s["require_armed"]
 
+        # FC와 같은 기체 SYSID를 쓰되, 컴패니언 컴퓨터 전용 COMPID로 구분합니다.
+        # GCS에서는 FC=1/1, OBC=1/191처럼 별도 컴포넌트로 표시됩니다.
+        source_system = m.get("source_system", 1)
+        source_component = m.get("source_component", 191)
+
         print(f"[MAVLink] 연결 중: {m['connection']} ...")
-        self.master = mavutil.mavlink_connection(m["connection"], baud=m["baud"])
+        self.master = mavutil.mavlink_connection(
+            m["connection"],
+            baud=m["baud"],
+            source_system=source_system,
+            source_component=source_component,
+        )
         self.master.wait_heartbeat()
-        print(f"[MAVLink] 연결됨 (system {self.master.target_system})")
+        print(
+            f"[MAVLink] 연결됨 (FC {self.master.target_system}/"
+            f"{self.master.target_component}, OBC {source_system}/{source_component})"
+        )
 
         self._armed = False
         self._mode = ""
@@ -94,7 +107,10 @@ class MavlinkLink:
             if msg is None:
                 break
             # 지상국이나 다른 기기의 하트비트는 무시합니다.
-            if msg.get_srcSystem() != self.master.target_system:
+            if (
+                msg.get_srcSystem() != self.master.target_system
+                or msg.get_srcComponent() != self.master.target_component
+            ):
                 continue
             self._armed = bool(
                 msg.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
@@ -114,7 +130,7 @@ class MavlinkLink:
         self.master.mav.heartbeat_send(
             mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
             mavutil.mavlink.MAV_AUTOPILOT_INVALID,
-            0, 0, 0,
+            0, 0, mavutil.mavlink.MAV_STATE_ACTIVE,
         )
 
     @property

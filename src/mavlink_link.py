@@ -69,10 +69,10 @@ def arducopter_mode_string(msg):
 
 
 class MavlinkLink:
-    def __init__(self, cfg):
+    def __init__(self, cfg, live=False):
         m = cfg["mavlink"]
         s = cfg["safety"]
-        self.dry_run = s["dry_run"]
+        self.live = live
         self.require_guided = s["require_guided"]
         self.require_armed = s["require_armed"]
 
@@ -106,10 +106,13 @@ class MavlinkLink:
             msg = self.master.recv_match(type="HEARTBEAT", blocking=False)
             if msg is None:
                 break
-            # 지상국이나 다른 기기의 하트비트는 무시합니다.
+            # FC와 SYSID가 같을 수 있는 OBC heartbeat는 autopilot 값으로 구분합니다.
+            # component는 연결 시 선택된 값과 실제 FC heartbeat 값이 다를 수 있어
+            # 필터로 사용하지 않습니다.
             if (
                 msg.get_srcSystem() != self.master.target_system
-                or msg.get_srcComponent() != self.master.target_component
+                or msg.autopilot
+                != mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA
             ):
                 continue
             self._armed = bool(
@@ -121,7 +124,7 @@ class MavlinkLink:
 
     def _send_heartbeat(self):
         """ArduCopter가 컴패니언 링크를 감시할 수 있도록 1Hz heartbeat 전송."""
-        if self.dry_run:
+        if not self.live:
             return
         now = time.monotonic()
         if now - self._last_heartbeat < 1.0:
@@ -153,7 +156,7 @@ class MavlinkLink:
 
     def send_velocity(self, cmd):
         """Command의 기체 기준 속도와 yaw rate를 ArduCopter에 전송."""
-        if self.dry_run:
+        if not self.live:
             return
 
         self.master.mav.set_position_target_local_ned_send(
@@ -174,7 +177,7 @@ class MavlinkLink:
 
     def statustext(self, text):
         """지상국(Mission Planner 등) 화면에 메시지를 띄웁니다."""
-        if self.dry_run:
+        if not self.live:
             return
         self.master.mav.statustext_send(
             mavutil.mavlink.MAV_SEVERITY_INFO, text.encode()[:50]

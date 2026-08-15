@@ -23,10 +23,10 @@ import time
 
 
 class Dropper:
-    def __init__(self, cfg):
+    def __init__(self, cfg, live=False):
         d = cfg["dropper"]
         self.enabled = d["enable"]
-        self.simulate = cfg["safety"]["dry_run"] or not self.enabled
+        self.simulate = not live or not self.enabled
 
         self.closed_angle = d["closed_angle"]
         self.open_angle = d["open_angle"]

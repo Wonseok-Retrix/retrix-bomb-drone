@@ -3,7 +3,7 @@
 
     python3 src/track_and_follow.py                # config.yaml 사용
     python3 src/track_and_follow.py --config my.yaml
-    python3 src/track_and_follow.py --live         # dry_run 해제 (실제 명령 전송)
+    python3 src/track_and_follow.py --live         # 실제 명령 전송
 
 구조:
     [카메라 스레드]  검출 --> 추적 --> 목표 저장        (camera.fps 속도, 1~2 fps)
@@ -106,8 +106,6 @@ def main():
     args = ap.parse_args()
 
     cfg = load_config(args.config)
-    if args.live:
-        cfg["safety"]["dry_run"] = False
 
     use_dropper = cfg["dropper"]["enable"]
 
@@ -117,15 +115,15 @@ def main():
     print(f"  Camera       : {cfg['camera']['fps']} fps / {cfg['camera'].get('rotation', 0)} deg")
     print(f"  Command rate : {cfg['mavlink']['send_rate']} Hz")
     print(f"  Dropper      : {'enabled' if use_dropper else 'disabled'}")
-    print(f"  Mode         : {'*** LIVE ***' if not cfg['safety']['dry_run'] else 'DRY RUN (no commands sent)'}")
+    print(f"  Mode         : {'*** LIVE ***' if args.live else 'DRY RUN (no commands sent)'}")
     print("=" * 60)
 
     detector = Detector(cfg)
     tracker = Tracker(cfg, detector.frame_size)
     controller = Controller(cfg["control"])
-    dropper = Dropper(cfg)
+    dropper = Dropper(cfg, live=args.live)
     judge = ReleaseJudge(cfg)
-    link = None if args.no_mavlink else MavlinkLink(cfg)
+    link = None if args.no_mavlink else MavlinkLink(cfg, live=args.live)
 
     vision = VisionThread(detector, tracker)
     vision.start()

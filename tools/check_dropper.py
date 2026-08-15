@@ -35,7 +35,6 @@ def main():
     cfg = load_config(os.path.join(ROOT, "config.yaml"))
     # 지상 점검이므로 설정과 무관하게 서보를 실제로 움직입니다.
     cfg["dropper"]["enable"] = True
-    cfg["safety"]["dry_run"] = False
 
     d = cfg["dropper"]
     print("=" * 52)
@@ -44,7 +43,7 @@ def main():
     print(f"  Pulse width : {d['min_pulse_us']} ~ {d['max_pulse_us']} us")
     print("=" * 52)
 
-    dropper = Dropper(cfg)
+    dropper = Dropper(cfg, live=True)
     if dropper.simulate:
         print("\nCould not initialize the servo. Check:")
         print("  - gpiozero installed?  sudo apt install python3-gpiozero python3-lgpio")

@@ -73,7 +73,7 @@ class VisionThread:
                 detections = self.detector.read()
                 target = self.tracker.update(detections)
             except Exception as e:  # 카메라 오류로 드론이 폭주하면 안 됨
-                print(f"[카메라 오류] {e}")
+                print(f"[CAMERA ERROR] {e}")
                 time.sleep(0.5)
                 continue
             with self._lock:
@@ -101,8 +101,8 @@ class VisionThread:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=os.path.join(ROOT, "config.yaml"))
-    ap.add_argument("--live", action="store_true", help="실제로 드론에 명령을 보냅니다")
-    ap.add_argument("--no-mavlink", action="store_true", help="카메라만 테스트")
+    ap.add_argument("--live", action="store_true", help="send commands to the drone")
+    ap.add_argument("--no-mavlink", action="store_true", help="test the camera only")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
@@ -112,12 +112,12 @@ def main():
     use_dropper = cfg["dropper"]["enable"]
 
     print("=" * 60)
-    print(f"  목표 클래스 : {cfg['detection']['target_class']}")
-    print(f"  모델        : {os.path.basename(cfg['camera']['model'])}")
-    print(f"  카메라      : {cfg['camera']['fps']} fps / {cfg['camera'].get('rotation', 0)}도")
-    print(f"  명령 전송   : {cfg['mavlink']['send_rate']} Hz")
-    print(f"  드로퍼      : {'사용' if use_dropper else '사용 안 함'}")
-    print(f"  모드        : {'*** LIVE ***' if not cfg['safety']['dry_run'] else 'DRY RUN (명령 안 보냄)'}")
+    print(f"  Target class : {cfg['detection']['target_class']}")
+    print(f"  Model        : {os.path.basename(cfg['camera']['model'])}")
+    print(f"  Camera       : {cfg['camera']['fps']} fps / {cfg['camera'].get('rotation', 0)} deg")
+    print(f"  Command rate : {cfg['mavlink']['send_rate']} Hz")
+    print(f"  Dropper      : {'enabled' if use_dropper else 'disabled'}")
+    print(f"  Mode         : {'*** LIVE ***' if not cfg['safety']['dry_run'] else 'DRY RUN (no commands sent)'}")
     print("=" * 60)
 
     detector = Detector(cfg)
@@ -169,7 +169,7 @@ def main():
                     )
                     last_status = now
             else:
-                ready, reason = False, "MAVLink 비활성"
+                ready, reason = False, "MAVLINK_DISABLED"
 
             # 과녁 위에 잘 정렬됐으면 투하합니다. 판단은 release.py 가 합니다.
             if use_dropper:
@@ -182,14 +182,14 @@ def main():
             if now - last_log > 0.5:
                 _log(target, cmd, reason, n_det, stalled, controller)
                 if use_dropper:
-                    print(f"     드로퍼: {judge.reason}"
-                          f"{' | 투하 완료' if dropper.dropped else ''}")
+                    print(f"     dropper: {judge.reason}"
+                          f"{' | RELEASED' if dropper.dropped else ''}")
                 last_log = now
 
             time.sleep(max(0.0, period - (time.monotonic() - loop_start)))
 
     except KeyboardInterrupt:
-        print("\n종료합니다.")
+        print("\nStopping.")
     finally:
         vision.stop()
         if link is not None:
@@ -200,9 +200,9 @@ def main():
 
 def _log(target, cmd, reason, n_det, stalled, controller):
     if stalled:
-        print(f"[!!] 카메라 정지 (프레임 안 들어옴) -> 정지 명령 | {reason}")
+        print(f"[!!] CAMERA STALL (no frames) -> stop command | {reason}")
     elif target is None:
-        print(f"[--] 목표 없음 (검출 {n_det}개) | {reason}")
+        print(f"[--] NO TARGET ({n_det} detections) | {reason}")
     else:
         age = target.age
         print(

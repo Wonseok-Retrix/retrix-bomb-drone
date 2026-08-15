@@ -18,18 +18,18 @@ cleanup() {
 trap cleanup EXIT
 
 if [[ "${RUN_USER}" == "root" ]]; then
-  echo "오류: root가 아닌 실제 비행용 계정으로 실행하세요."
-  echo "예: bash tools/install_autostart.sh"
+  echo "Error: run this as the non-root flight account."
+  echo "Example: bash tools/install_autostart.sh"
   exit 1
 fi
 
 if [[ ! -x "${PYTHON_BIN}" ]]; then
-  echo "오류: ${PYTHON_BIN}을 찾을 수 없습니다."
+  echo "Error: ${PYTHON_BIN} was not found."
   exit 1
 fi
 
 if [[ ! -f "${MAIN_SCRIPT}" ]]; then
-  echo "오류: ${MAIN_SCRIPT}을 찾을 수 없습니다."
+  echo "Error: ${MAIN_SCRIPT} was not found."
   exit 1
 fi
 
@@ -55,16 +55,16 @@ printf '%s\n' \
   'WantedBy=multi-user.target' \
   > "${TEMP_SERVICE}"
 
-echo "서비스를 등록합니다: ${SERVICE_NAME}"
-echo "실행 계정: ${RUN_USER}"
-echo "프로젝트: ${PROJECT_DIR}"
+echo "Installing service: ${SERVICE_NAME}"
+echo "Run user: ${RUN_USER}"
+echo "Project: ${PROJECT_DIR}"
 
 sudo install -o root -g root -m 0644 "${TEMP_SERVICE}" "${SERVICE_FILE}"
 sudo systemctl daemon-reload
 sudo systemctl enable --now "${SERVICE_NAME}"
 
 echo
-echo "등록 완료: 부팅 시 LIVE 모드로 자동 실행됩니다."
-echo "상태 확인: systemctl status ${SERVICE_NAME}"
-echo "로그 확인: journalctl -u ${SERVICE_NAME} -f"
-echo "자동 실행 해제: bash tools/uninstall_autostart.sh"
+echo "Installed: LIVE mode will start automatically at boot."
+echo "Check status: systemctl status ${SERVICE_NAME}"
+echo "View logs: journalctl -u ${SERVICE_NAME} -f"
+echo "Disable autostart: bash tools/uninstall_autostart.sh"

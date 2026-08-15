@@ -29,25 +29,25 @@ DEFAULT_CONFIG = os.path.join(ROOT, "config.yaml")
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="OBC MAVLink 송신/라우팅 점검")
+    parser = argparse.ArgumentParser(description="Test OBC MAVLink transmission and routing")
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument(
         "--system-id",
         type=int,
         default=1,
-        help="OBC가 속한 기체 SYSID (기본값: 1)",
+        help="vehicle SYSID used by the OBC (default: 1)",
     )
     parser.add_argument(
         "--component-id",
         type=int,
         default=191,
-        help="OBC COMPID (기본값: 191, MAV_COMP_ID_ONBOARD_COMPUTER)",
+        help="OBC COMPID (default: 191, MAV_COMP_ID_ONBOARD_COMPUTER)",
     )
     parser.add_argument(
         "--text-interval",
         type=float,
         default=5.0,
-        help="STATUSTEXT 전송 간격(초, 기본값: 5)",
+        help="STATUSTEXT interval in seconds (default: 5)",
     )
     return parser.parse_args()
 
@@ -85,7 +85,7 @@ def main():
     args = parse_args()
     connection, baud = load_connection(args.config)
 
-    print(f"연결 중: {connection} @ {baud}")
+    print(f"Connecting: {connection} @ {baud}")
     master = mavutil.mavlink_connection(
         connection,
         baud=baud,
@@ -93,20 +93,20 @@ def main():
         source_component=args.component_id,
     )
 
-    print("FC HEARTBEAT 대기중...")
+    print("Waiting for FC HEARTBEAT...")
     fc_heartbeat = master.wait_heartbeat()
     print(
-        "FC 수신: "
+        "FC received: "
         f"SYSID={fc_heartbeat.get_srcSystem()} "
         f"COMPID={fc_heartbeat.get_srcComponent()} "
         f"type={fc_heartbeat.type} autopilot={fc_heartbeat.autopilot}"
     )
     print(
-        f"OBC 송신 시작: SYSID={args.system_id} COMPID={args.component_id}\n"
+        f"Starting OBC transmission: SYSID={args.system_id} COMPID={args.component_id}\n"
         "  HEARTBEAT type=18     : 1 Hz\n"
         "  NAMED_VALUE_INT       : OBC_COUNT, 1 Hz\n"
-        f"  STATUSTEXT            : {args.text_interval:g}초 간격\n"
-        "종료: Ctrl+C"
+        f"  STATUSTEXT            : every {args.text_interval:g} s\n"
+        "Exit: Ctrl+C"
     )
 
     started_at = time.monotonic()
@@ -136,7 +136,7 @@ def main():
 
             time.sleep(0.02)
     except KeyboardInterrupt:
-        print("\n종료")
+        print("\nStopped")
     finally:
         master.close()
 

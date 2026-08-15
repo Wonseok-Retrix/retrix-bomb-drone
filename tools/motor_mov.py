@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""PX4 모터 개별 회전 테스트 (MAV_CMD_DO_MOTOR_TEST).
+"""PX4 individual motor test (MAV_CMD_DO_MOTOR_TEST).
 
     python3 tools/motor_mov.py <motor> <speed>
 
-    motor : 0 ~ 3      (모터 번호, 0-based)
-    speed : 0 ~ 100    (회전 속도 %)
+    motor : 0 ~ 3      (0-based motor number)
+    speed : 0 ~ 100    (rotation speed %)
 
-예시:
-    python3 tools/motor_mov.py 1 20     # 모터 1번 20% 속도로 회전
-    python3 tools/motor_mov.py 3 100    # 모터 3번 최대 속도
-    python3 tools/motor_mov.py 0 0      # 모터 0번 정지
+Examples:
+    python3 tools/motor_mov.py 1 20     # run motor 1 at 20%
+    python3 tools/motor_mov.py 3 100    # run motor 3 at full speed
+    python3 tools/motor_mov.py 0 0      # stop motor 0
 
-[!] 반드시 프로펠러를 제거한 상태에서 실행하세요. PX4 모터 테스트는
-    시동(arm) 없이도 실제 모터를 회전시킵니다.
+[!] Remove all propellers before running this tool. PX4 motor testing
+    spins real motors without arming.
 
-FC 에서 수신되는 모든 MAVLink 메시지를 실시간으로 출력합니다.
-Ctrl+C 로 종료하면 모든 모터에 정지 명령을 보냅니다.
+All MAVLink messages received from the FC are printed in real time.
+Ctrl+C sends a stop command to every motor before exiting.
 """
 
 import os
@@ -117,7 +117,7 @@ def rx_loop(master):
                 pass
             print(f"[RX] {line}")
     except Exception as e:
-        print(f"[RX 스레드 종료] {e}")
+        print(f"[RX thread stopped] {e}")
 
 
 def main():
@@ -131,43 +131,43 @@ def main():
         usage()
 
     if not (0 <= motor <= 3):
-        print(f"모터 번호는 0~3 사이여야 합니다. (입력: {motor})")
+        print(f"Motor number must be between 0 and 3. (input: {motor})")
         usage()
     if not (0 <= speed <= 100):
-        print(f"속도는 0~100 사이여야 합니다. (입력: {speed})")
+        print(f"Speed must be between 0 and 100. (input: {speed})")
         usage()
 
     # ---- 안전 경고 배너 ----
     print("=" * 60)
-    print("  [!] 모터 개별 회전 테스트")
-    print("  [!] 프로펠러가 완전히 제거되었는지 확인하세요!")
-    print("  [!] 모터 테스트는 시동(arm) 없이 실제로 회전합니다.")
+    print("  [!] INDIVIDUAL MOTOR TEST")
+    print("  [!] Make sure all propellers are removed!")
+    print("  [!] Motor testing spins real motors without arming.")
     print("=" * 60)
     if speed > 0:
-        print(f"\n모터 {motor}번을 {speed}% 속도로 회전시킵니다.")
-        print("5초 후 시작합니다... (Ctrl+C 로 취소)\n")
+        print(f"\nMotor {motor} will run at {speed}%.")
+        print("Starting in 5 seconds... (Ctrl+C to cancel)\n")
         try:
             time.sleep(5)
         except KeyboardInterrupt:
-            print("\n취소됨. 종료합니다.")
+            print("\nCancelled.")
             return
     else:
-        print(f"\n모터 {motor}번 정지 모드로 실행합니다.\n")
+        print(f"\nRunning stop mode for motor {motor}.\n")
 
     # ---- MAVLink 연결 ----
     with open(os.path.join(ROOT, "config.yaml")) as f:
         m = yaml.safe_load(f)["mavlink"]
 
-    print(f"연결 중: {m['connection']} @ {m['baud']}")
+    print(f"Connecting: {m['connection']} @ {m['baud']}")
     master = mavutil.mavlink_connection(m["connection"], baud=m["baud"])
 
-    print("하트비트 대기중...")
+    print("Waiting for heartbeat...")
     master.wait_heartbeat()
     print(f"OK! system={master.target_system} component={master.target_component}")
 
     # 상태 메시지 요청 (HEARTBEAT 는 항상 오므로 제외)
     request_messages(master)
-    print("상태 메시지 요청 완료 (SYS_STATUS, BATTERY_STATUS, GPS, ATTITUDE @4Hz)\n")
+    print("Status messages requested (SYS_STATUS, BATTERY_STATUS, GPS, ATTITUDE @4Hz)\n")
 
     # ---- 수신 스레드 시작 ----
     t = threading.Thread(target=rx_loop, args=(master,), daemon=True)
@@ -175,12 +175,12 @@ def main():
 
     try:
         if speed == 0:
-            print("정지 명령 전송: 모터 0~3 throttle=0")
+            print("Sending stop commands: motors 0-3, throttle=0")
             stop_all_motors(master)
-            print("모든 모터가 정지 상태입니다. (메시지 수신 중, Ctrl+C 로 종료)")
+            print("All motors are stopped. Receiving messages; Ctrl+C to exit.")
         else:
-            print(f"명령 시작: 모터 {motor}번 @ {speed}% (1Hz 재전송)")
-            print("Ctrl+C 로 종료하면 모든 모터가 정지합니다.\n")
+            print(f"Starting command: motor {motor} @ {speed}% (resent at 1Hz)")
+            print("Ctrl+C stops all motors and exits.\n")
 
         # 1Hz 로 명령 재전송 (모터 테스트 세션 유지)
         while True:
@@ -189,9 +189,9 @@ def main():
             time.sleep(1.0)
 
     except KeyboardInterrupt:
-        print("\n\n종료 명령: 모든 모터 정지...")
+        print("\n\nExit command: stopping all motors...")
         stop_all_motors(master)
-        print("모든 모터가 정지되었습니다. 종료합니다.")
+        print("All motors stopped. Exiting.")
 
 
 if __name__ == "__main__":

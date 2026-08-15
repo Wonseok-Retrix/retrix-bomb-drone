@@ -7,8 +7,8 @@ TEMPLATE="$PROJECT_ROOT/config.example.yaml"
 CONFIG="$PROJECT_ROOT/config.yaml"
 
 if [ -e "$CONFIG" ]; then
-  echo "== config.yaml 유지 (이미 존재함) =="
+  echo "== Keeping existing config.yaml =="
 else
   cp "$TEMPLATE" "$CONFIG"
-  echo "== config.yaml 생성 완료 =="
+  echo "== Created config.yaml =="
 fi

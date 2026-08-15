@@ -43,10 +43,10 @@ def main():
     with open(os.path.join(ROOT, "config.yaml")) as f:
         m = yaml.safe_load(f)["mavlink"]
 
-    print(f"연결 중: {m['connection']} @ {m['baud']}")
+    print(f"Connecting: {m['connection']} @ {m['baud']}")
     master = mavutil.mavlink_connection(m["connection"], baud=m["baud"])
 
-    print("하트비트 대기중... (안 오면 배선/보드레이트/SERIALx_PROTOCOL 확인)")
+    print("Waiting for heartbeat... (check wiring, baud rate, and SERIALx_PROTOCOL if none arrives)")
     master.wait_heartbeat()
     print(f"OK! system={master.target_system} component={master.target_component}\n")
 
@@ -58,7 +58,7 @@ def main():
         while True:
             msg = master.recv_match(blocking=True, timeout=2)
             if msg is None:
-                print("... 메시지 없음")
+                print("... no messages")
                 continue
             t = msg.get_type()
 
@@ -93,7 +93,7 @@ def main():
                 )
                 last = now
     except KeyboardInterrupt:
-        print("\n종료")
+        print("\nStopped")
 
 
 if __name__ == "__main__":

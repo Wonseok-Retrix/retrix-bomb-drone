@@ -33,7 +33,7 @@ class ReleaseJudge:
         self.aim_y = r["aim_y"]
 
         self._good_since = None
-        self.reason = "대기"
+        self.reason = "WAITING"
 
     def update(self, target, ready):
         """조건을 다 만족하면 딱 한 번 True. 매 루프 호출하세요."""
@@ -49,29 +49,29 @@ class ReleaseJudge:
 
         held = now - self._good_since
         if held < self.hold_seconds:
-            self.reason = f"정렬 유지중 {held:.1f}/{self.hold_seconds:.1f}s"
+            self.reason = f"HOLDING_ALIGNMENT {held:.1f}/{self.hold_seconds:.1f}s"
             return False
 
-        self.reason = "투하 조건 충족"
+        self.reason = "RELEASE_READY"
         self._good_since = None
         return True
 
     def _check(self, target, ready):
         if not ready:
-            return False, "제어 불가 상태"       # GUIDED 아님 / 시동 안 걸림
+            return False, "CONTROL_NOT_READY"    # GUIDED 아님 / 시동 안 걸림
         if target is None:
-            return False, "과녁 안 보임"
+            return False, "NO_TARGET"
 
         age = target.age
         if age > self.max_age:
-            return False, f"과녁 정보가 오래됨 ({age:.1f}s)"
+            return False, f"STALE_TARGET ({age:.1f}s)"
 
         dx = target.offset_x - self.aim_x
         dy = target.offset_y - self.aim_y
         if abs(dx) > self.align or abs(dy) > self.align:
-            return False, f"중앙에서 벗어남 ({dx:+.2f}, {dy:+.2f})"
+            return False, f"NOT_ALIGNED ({dx:+.2f}, {dy:+.2f})"
 
         if target.size < self.size_min:
-            return False, f"아직 높음 (크기 {target.size:.2f} < {self.size_min:.2f})"
+            return False, f"TOO_HIGH (size {target.size:.2f} < {self.size_min:.2f})"
 
-        return True, "정렬됨"
+        return True, "ALIGNED"

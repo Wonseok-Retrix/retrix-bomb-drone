@@ -29,7 +29,7 @@ from dropper import Dropper  # noqa: E402
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--angle", type=float, help="이 각도로 한 번 보내고 끝냅니다")
+    ap.add_argument("--angle", type=float, help="move to this angle once, then exit")
     args = ap.parse_args()
 
     cfg = load_config(os.path.join(ROOT, "config.yaml"))
@@ -39,47 +39,47 @@ def main():
 
     d = cfg["dropper"]
     print("=" * 52)
-    print(f"  GPIO       : {d['pin']}  (BCM 번호)")
-    print(f"  닫힘/열림  : {d['closed_angle']}도 / {d['open_angle']}도")
-    print(f"  펄스 폭    : {d['min_pulse_us']} ~ {d['max_pulse_us']} us")
+    print(f"  GPIO        : {d['pin']}  (BCM numbering)")
+    print(f"  Closed/Open : {d['closed_angle']} deg / {d['open_angle']} deg")
+    print(f"  Pulse width : {d['min_pulse_us']} ~ {d['max_pulse_us']} us")
     print("=" * 52)
 
     dropper = Dropper(cfg)
     if dropper.simulate:
-        print("\n서보를 열지 못했습니다. 아래를 확인하세요:")
-        print("  - gpiozero 설치됨?     sudo apt install python3-gpiozero python3-lgpio")
-        print("  - 다른 프로그램이 같은 GPIO 를 쓰고 있지 않은지")
+        print("\nCould not initialize the servo. Check:")
+        print("  - gpiozero installed?  sudo apt install python3-gpiozero python3-lgpio")
+        print("  - no other process is using the same GPIO")
         return 1
 
     try:
         if args.angle is not None:
-            print(f"\n{args.angle}도로 이동합니다...")
+            print(f"\nMoving to {args.angle} degrees...")
             dropper._move(args.angle)
             time.sleep(1.5)
-            print("이 각도에서 물건이 걸리나요? 빠지나요?")
-            print("-> config.yaml 의 closed_angle / open_angle 에 적으세요")
+            print("Does this angle hold or release the payload?")
+            print("-> Set closed_angle / open_angle in config.yaml")
             return 0
 
-        print("\n키를 눌러 서보를 제어하세요 (Enter 불필요).")
-        print("  o: 열기   c: 닫기   q: 종료")
+        print("\nPress a key to control the servo (no Enter required).")
+        print("  o: open   c: close   q: quit")
         while True:
             key = _read_key().lower()
             if key == "o":
-                print("\n열기 (물건을 놓는 자세)")
+                print("\nOpen (release position)")
                 # drop()의 자동 닫힘/1회 제한 없이 자세를 직접 점검합니다.
                 dropper._move(dropper.open_angle)
             elif key == "c":
-                print("\n닫기 (물건을 잡는 자세)")
+                print("\nClose (holding position)")
                 dropper.close()
                 _wait(dropper, 0.6)
             elif key == "q":
-                print("\n종료")
+                print("\nQuit")
                 break
 
-        print("떨림이 심하면: 5V 전원이 FC 서보 레일에서 오는지, 접지가 Pi 와 공통인지 확인")
+        print("If the servo jitters, check the 5V servo-rail supply and shared ground with the Pi.")
         return 0
     except KeyboardInterrupt:
-        print("\n중단")
+        print("\nInterrupted")
         return 1
     finally:
         dropper.close()
@@ -98,7 +98,7 @@ def _wait(dropper, seconds):
 def _read_key():
     """터미널에서 Enter 없이 키 하나를 읽고 설정을 즉시 복원합니다."""
     if not sys.stdin.isatty():
-        raise RuntimeError("키 입력 테스트는 터미널에서 실행해야 합니다")
+        raise RuntimeError("interactive key testing requires a terminal")
 
     fd = sys.stdin.fileno()
     old = termios.tcgetattr(fd)

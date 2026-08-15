@@ -6,7 +6,7 @@ set -euo pipefail
 SERVICE_NAME="retrix-bomb-drone.service"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}"
 
-echo "서비스를 중지하고 자동 실행을 해제합니다: ${SERVICE_NAME}"
+echo "Stopping and disabling service: ${SERVICE_NAME}"
 sudo systemctl disable --now "${SERVICE_NAME}" 2>/dev/null || true
 
 if [[ -f "${SERVICE_FILE}" ]]; then
@@ -16,6 +16,5 @@ fi
 sudo systemctl daemon-reload
 sudo systemctl reset-failed "${SERVICE_NAME}" 2>/dev/null || true
 
-echo "해제 완료: ${SERVICE_FILE}을 제거했습니다."
-echo "다시 등록하려면: bash tools/install_autostart.sh"
-
+echo "Removed: ${SERVICE_FILE}"
+echo "To install again: bash tools/install_autostart.sh"

@@ -21,20 +21,20 @@ from detector import Detector  # noqa: E402
 
 def main():
     cfg = load_config(os.path.join(ROOT, "config.yaml"))
-    print(f"모델: {cfg['camera']['model']}")
-    print(f"회전: {cfg['camera'].get('rotation', 0)}도")
-    print("펌웨어를 카메라에 올리는 중입니다. 처음에는 1~2분 걸릴 수 있습니다...\n")
+    print(f"Model: {cfg['camera']['model']}")
+    print(f"Rotation: {cfg['camera'].get('rotation', 0)} deg")
+    print("Uploading firmware to the camera. The first run may take 1-2 minutes...\n")
 
     det = Detector(cfg)
-    print(f"해상도: {det.frame_size}, 라벨 {len(det.labels)}개")
-    print(f"찾는 대상: '{cfg['detection']['target_class']}'\n")
+    print(f"Resolution: {det.frame_size}, labels: {len(det.labels)}")
+    print(f"Target class: '{cfg['detection']['target_class']}'\n")
 
     if cfg["detection"]["target_class"] not in det.labels:
-        print("!! 경고: target_class 가 라벨 파일에 없습니다. 사용 가능한 라벨 일부:")
+        print("!! WARNING: target_class is not in the label file. Available labels include:")
         print("   " + ", ".join(det.labels[:20]))
         print()
 
-    print("실측 fps 가 설정값(%d)에 가까운지 확인하세요.\n" % cfg["camera"]["fps"])
+    print("Check that measured fps is close to the configured value (%d).\n" % cfg["camera"]["fps"])
 
     last = 0.0
     frames = 0
@@ -55,13 +55,13 @@ def main():
                     counts = Counter(d.label for d in results)
                     summary = ", ".join(f"{k}x{v}" for k, v in counts.items())
                     best = max(results, key=lambda d: d.conf)
-                    detail = f"최고: {best.label} {best.conf:.2f} box={best.box}"
+                    detail = f"best: {best.label} {best.conf:.2f} box={best.box}"
                 else:
-                    summary, detail = "검출 없음", ""
+                    summary, detail = "no detections", ""
                 print(f"[{fps:4.1f} fps] {summary:34s} | {detail}")
                 last = now
     except KeyboardInterrupt:
-        print("\n종료")
+        print("\nStopped")
     finally:
         det.close()
 

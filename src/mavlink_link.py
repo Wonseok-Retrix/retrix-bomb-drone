@@ -81,7 +81,7 @@ class MavlinkLink:
         source_system = m.get("source_system", 1)
         source_component = m.get("source_component", 191)
 
-        print(f"[MAVLink] 연결 중: {m['connection']} ...")
+        print(f"[MAVLink] connecting: {m['connection']} ...")
         self.master = mavutil.mavlink_connection(
             m["connection"],
             baud=m["baud"],
@@ -90,7 +90,7 @@ class MavlinkLink:
         )
         self.master.wait_heartbeat()
         print(
-            f"[MAVLink] 연결됨 (FC {self.master.target_system}/"
+            f"[MAVLink] connected (FC {self.master.target_system}/"
             f"{self.master.target_component}, OBC {source_system}/{source_component})"
         )
 
@@ -144,9 +144,9 @@ class MavlinkLink:
     def ready_to_command(self):
         """지금 속도 명령을 보내도 되는 상태인지."""
         if self.require_armed and not self._armed:
-            return False, "시동 대기중"
+            return False, "WAIT_ARM"
         if self.require_guided and self._mode != "GUIDED":
-            return False, f"GUIDED 아님 (현재 {self._mode or '?'})"
+            return False, f"NOT_GUIDED (current {self._mode or '?'})"
         return True, "OK"
 
     # ---------- 명령 ----------

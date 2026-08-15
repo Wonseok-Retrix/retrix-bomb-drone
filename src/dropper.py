@@ -40,7 +40,7 @@ class Dropper:
 
         if self.simulate:
             why = "dropper.enable=false" if not self.enabled else "DRY RUN"
-            print(f"[드로퍼] 시뮬레이션 모드 ({why}) - 서보는 움직이지 않습니다")
+            print(f"[DROPPER] simulation mode ({why}) - servo will not move")
             return
 
         try:
@@ -54,11 +54,11 @@ class Dropper:
                 min_pulse_width=d["min_pulse_us"] / 1_000_000,
                 max_pulse_width=d["max_pulse_us"] / 1_000_000,
             )
-            print(f"[드로퍼] GPIO{d['pin']} 서보 준비됨")
+            print(f"[DROPPER] GPIO{d['pin']} servo ready")
             self.close()
         except Exception as e:
             # 서보가 없다고 비행이 멈추면 안 됩니다. 추적은 계속합니다.
-            print(f"[드로퍼] 서보를 열 수 없습니다 ({e}) - 시뮬레이션으로 계속합니다")
+            print(f"[DROPPER] could not initialize servo ({e}) - continuing in simulation")
             self.simulate = True
 
     @property
@@ -71,7 +71,7 @@ class Dropper:
         """물건을 놓습니다. 실제로 놓았으면 True."""
         if self.once and self._dropped:
             return False
-        print("[드로퍼] ***** 투하 *****")
+        print("[DROPPER] ***** RELEASE *****")
         self._move(self.open_angle)
         self._dropped = True
         self._close_at = time.monotonic() + self.open_seconds
@@ -102,7 +102,7 @@ class Dropper:
 
     def _move(self, angle):
         if self.simulate or self._servo is None:
-            print(f"[드로퍼] (시뮬) 서보 {angle}도")
+            print(f"[DROPPER] (simulation) servo {angle} deg")
             return
         self._servo.angle = angle
 

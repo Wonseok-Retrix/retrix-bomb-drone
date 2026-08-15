@@ -53,8 +53,8 @@ PAGE = """<!DOCTYPE html>
 <body>
 <h3>tracking preview</h3>
 <img src="/stream.mjpg">
-<p>초록=검출 &nbsp; 빨강=추적 목표 &nbsp; 회색띠=데드밴드<br>
-config.yaml 을 고치고 이 스크립트를 다시 실행하세요</p>
+<p>green=detection &nbsp; red=tracked target &nbsp; gray band=deadband<br>
+Edit config.yaml, then restart this script.</p>
 </body></html>"""
 
 
@@ -132,12 +132,12 @@ def local_ip():
         s.close()
         return ip
     except OSError:
-        return "<pi주소>"
+        return "<pi-address>"
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--fps", type=int, help="추론 프레임레이트를 임시로 덮어씁니다")
+    ap.add_argument("--fps", type=int, help="temporarily override inference frame rate")
     ap.add_argument("--port", type=int, default=8080)
     args = ap.parse_args()
 
@@ -158,10 +158,10 @@ def main():
     threading.Thread(target=server.serve_forever, daemon=True).start()
 
     print("=" * 52)
-    print(f"  브라우저에서 열기 :  http://{local_ip()}:{args.port}")
-    print(f"  추론 fps          :  {cfg['camera']['fps']}")
-    print(f"  카메라 회전       :  {cfg['camera'].get('rotation', 0)}도")
-    print("  종료              :  Ctrl+C")
+    print(f"  Open in browser :  http://{local_ip()}:{args.port}")
+    print(f"  Inference fps   :  {cfg['camera']['fps']}")
+    print(f"  Camera rotation :  {cfg['camera'].get('rotation', 0)} deg")
+    print("  Exit            :  Ctrl+C")
     print("=" * 52)
 
     try:
@@ -203,11 +203,11 @@ def main():
                     fill=(255, 40, 40),
                 )
             else:
-                draw.text((8, h - 14), "목표 없음", fill=(255, 200, 0))
+                draw.text((8, h - 14), "NO TARGET", fill=(255, 200, 0))
 
             stream.publish(encode_jpeg(np.asarray(img)))
     except KeyboardInterrupt:
-        print("\n종료")
+        print("\nStopped")
     finally:
         server.shutdown()
         det.close()

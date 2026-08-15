@@ -59,7 +59,7 @@ class Detector:
         self.picam2 = Picamera2(self.imx500.camera_num)
         rotation = cam.get("rotation", 0)
         if rotation not in (0, 180):
-            raise ValueError("camera.rotation은 0 또는 180만 지원합니다")
+            raise ValueError("camera.rotation must be 0 or 180")
         transform = Transform(hflip=rotation == 180, vflip=rotation == 180)
         config = self.picam2.create_preview_configuration(
             # picamera2 의 포맷 이름은 메모리 바이트 순서의 반대입니다.

@@ -62,6 +62,7 @@ tools/
   uninstall_autostart.sh      LIVE 모드 자동 실행 서비스 해제
   check_camera.py             1단계 점검: 카메라 및 AI 모델 작동 테스트
   check_mavlink.py            2단계 점검: FC MAVLink 연결 상태 점검
+  test_obc_heartbeat.py       OBC heartbeat/디버그 메시지의 GCS 라우팅 점검
   check_dropper.py            3단계 점검: 서보 드로퍼 각도 및 동작 테스트
   preview.py                  웹 브라우저 기반 실시간 바운딩 박스 및 제어 모니터링
 notebooks/

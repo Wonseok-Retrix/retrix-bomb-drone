@@ -92,15 +92,15 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 
 ## 4. `config.yaml` 주요 파라미터 현황 (1~2 fps 전제)
 
-| 설정 항목 | 현재 설정값 | 1~2 fps 기준 튜닝 이유 |
-| :--- | :--- | :--- |
-| `camera.fps` | `2` | AI 카메라 실측 1~2 fps 동작 반영 |
-| `control.lateral_gain` | `0.5` | 피드백 지연에 따른 헌팅 방지를 위해 게인 절반 하향 |
-| `control.max_lateral` | `0.4` (m/s) | 1초당 최대 이동 거리를 0.4m로 안전 제한 |
-| `control.stale_stop` | `1.2` (초) | 프레임 간격 사이 감속 정지 유도 |
-| `tracking.smoothing` | `0.8` | 프레임이 귀하므로 평활화 지연 최소화 |
-| `tracking.lost_timeout` | `3.0` (초) | 1~2프레임 순간 미검출 시 추적 포기 방지 |
-| `release.hold_seconds` | `2.0` (초) | 과녁 정렬 상태에서 2~4프레임 검증 후 투하 |
+| 설정 항목                   | 현재 설정값      | 1~2 fps 기준 튜닝 이유              |
+| :---------------------- | :---------- | :---------------------------- |
+| `camera.fps`            | `2`         | AI 카메라 실측 1~2 fps 동작 반영       |
+| `control.lateral_gain`  | `0.5`       | 피드백 지연에 따른 헌팅 방지를 위해 게인 절반 하향 |
+| `control.max_lateral`   | `0.4` (m/s) | 1초당 최대 이동 거리를 0.4m로 안전 제한     |
+| `control.stale_stop`    | `1.2` (초)   | 프레임 간격 사이 감속 정지 유도            |
+| `tracking.smoothing`    | `0.8`       | 프레임이 귀하므로 평활화 지연 최소화          |
+| `tracking.lost_timeout` | `3.0` (초)   | 1~2프레임 순간 미검출 시 추적 포기 방지      |
+| `release.hold_seconds`  | `2.0` (초)   | 과녁 정렬 상태에서 2~4프레임 검증 후 투하     |
 
 ---
 

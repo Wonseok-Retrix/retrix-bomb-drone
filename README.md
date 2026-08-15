@@ -20,6 +20,7 @@ Raspberry Pi AI Camera(Sony IMX500)로 물체를 감지하고, ArduCopter 기반
 
 ```bash
 # 1. 라즈베리파이 초기 설정 (최초 1회만 실행 후 재부팅)
+# config.yaml도 config.example.yaml에서 자동 생성됩니다.
 bash tools/install.sh && sudo reboot
 
 # 2. 1단계 점검: AI 카메라 작동 확인
@@ -43,7 +44,8 @@ python3 src/track_and_follow.py --live
 ## 파일 구조
 
 ```
-config.yaml                   * 학생 파라미터 튜닝 파일 (단일 설정 파일)
+config.example.yaml           설정 기본값 (Git에서 관리)
+config.yaml                   * 장비별 튜닝 파일 (Git에서 제외, 설치 시 생성)
 src/
   detector.py                 IMX500 AI 카메라 객체 검출
   tracker.py                  검출 결과 중 단일 목표 선택 및 추적
@@ -55,6 +57,9 @@ src/
   track_and_follow.py         메인 제어 루프
 tools/
   install.sh                  라즈베리파이 자동 환경 설정 스크립트
+  init_config.sh              config.yaml 최초 생성 (기존 설정은 유지)
+  install_autostart.sh        부팅 시 LIVE 모드 자동 실행 서비스 등록
+  uninstall_autostart.sh      LIVE 모드 자동 실행 서비스 해제
   check_camera.py             1단계 점검: 카메라 및 AI 모델 작동 테스트
   check_mavlink.py            2단계 점검: FC MAVLink 연결 상태 점검
   check_dropper.py            3단계 점검: 서보 드로퍼 각도 및 동작 테스트
@@ -88,4 +93,3 @@ assets/
 - [ArduPilot Copter — Guided Mode](https://ardupilot.org/copter/docs/ac2_guidedmode.html)
 - [ArduPilot — Copter Commands in Guided Mode](https://ardupilot.org/dev/docs/copter-commands-in-guided-mode.html)
 - [ArduPilot — MicoAir743v2](https://ardupilot.org/copter/docs/common-MicoAir743v2.html)
-

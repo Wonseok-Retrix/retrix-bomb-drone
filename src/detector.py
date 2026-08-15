@@ -6,6 +6,7 @@ picamera2 의 imx500_object_detection_demo.py 를 워크샵용으로 정리한 �
 
 from dataclasses import dataclass
 
+from libcamera import Transform
 from picamera2 import Picamera2
 from picamera2.devices import IMX500
 from picamera2.devices.imx500 import NetworkIntrinsics, postprocess_nanodet_detection
@@ -56,6 +57,10 @@ class Detector:
         self.last_frame = None
 
         self.picam2 = Picamera2(self.imx500.camera_num)
+        rotation = cam.get("rotation", 0)
+        if rotation not in (0, 180):
+            raise ValueError("camera.rotation은 0 또는 180만 지원합니다")
+        transform = Transform(hflip=rotation == 180, vflip=rotation == 180)
         config = self.picam2.create_preview_configuration(
             # picamera2 의 포맷 이름은 메모리 바이트 순서의 반대입니다.
             # 즉 "BGR888" 로 잡아야 numpy 배열이 R, G, B 순서가 되어
@@ -64,6 +69,7 @@ class Detector:
             main={"format": "BGR888", "size": (640, 480)},
             controls={"FrameRate": intrinsics.inference_rate},
             buffer_count=12,
+            transform=transform,
         )
         self.imx500.show_network_fw_progress_bar()
         self.picam2.start(config, show_preview=cam["preview"])

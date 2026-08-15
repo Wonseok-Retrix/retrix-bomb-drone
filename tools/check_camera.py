@@ -22,6 +22,7 @@ from detector import Detector  # noqa: E402
 def main():
     cfg = load_config(os.path.join(ROOT, "config.yaml"))
     print(f"모델: {cfg['camera']['model']}")
+    print(f"회전: {cfg['camera'].get('rotation', 0)}도")
     print("펌웨어를 카메라에 올리는 중입니다. 처음에는 1~2분 걸릴 수 있습니다...\n")
 
     det = Detector(cfg)

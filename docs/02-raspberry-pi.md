@@ -121,6 +121,27 @@ http://drone.local:8080
 
 ---
 
-다음 → [03. 비행 컨트롤러 설정](03-flight-controller.md)
+## 6. 부팅 시 LIVE 모드 자동 실행
 
+카메라, MAVLink, 드로퍼를 프로펠러 없이 모두 점검한 뒤 자동 실행 서비스를 등록합니다.
+
+```bash
+cd ~/ai-tracking-drone
+bash tools/install_autostart.sh
+```
+
+서비스는 현재 계정과 저장소 경로를 자동으로 사용하며, 즉시 `track_and_follow.py --live`를 시작하고 이후 부팅 때마다 자동 실행합니다. 프로세스가 오류로 종료되면 5초 후 재시작합니다.
+
+```bash
+systemctl status retrix-bomb-drone.service       # 상태 확인
+journalctl -u retrix-bomb-drone.service -f      # 실시간 로그
+bash tools/uninstall_autostart.sh                # 중지 및 자동 실행 해제
+```
+
+> [!WARNING]
+> 이 서비스는 실제 MAVLink 명령과 드로퍼 출력을 활성화합니다. 지상 점검이 끝난 기체에서만 등록하세요. 프로그램은 시동 및 GUIDED 상태를 확인한 뒤 이동 명령을 허용합니다.
+
+---
+
+다음 → [03. 비행 컨트롤러 설정](03-flight-controller.md)
 

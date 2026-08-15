@@ -160,6 +160,7 @@ def main():
     print("=" * 52)
     print(f"  브라우저에서 열기 :  http://{local_ip()}:{args.port}")
     print(f"  추론 fps          :  {cfg['camera']['fps']}")
+    print(f"  카메라 회전       :  {cfg['camera'].get('rotation', 0)}도")
     print("  종료              :  Ctrl+C")
     print("=" * 52)
 

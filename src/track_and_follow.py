@@ -114,7 +114,7 @@ def main():
     print("=" * 60)
     print(f"  목표 클래스 : {cfg['detection']['target_class']}")
     print(f"  모델        : {os.path.basename(cfg['camera']['model'])}")
-    print(f"  카메라      : {cfg['camera']['fps']} fps")
+    print(f"  카메라      : {cfg['camera']['fps']} fps / {cfg['camera'].get('rotation', 0)}도")
     print(f"  명령 전송   : {cfg['mavlink']['send_rate']} Hz")
     print(f"  드로퍼      : {'사용' if use_dropper else '사용 안 함'}")
     print(f"  모드        : {'*** LIVE ***' if not cfg['safety']['dry_run'] else 'DRY RUN (명령 안 보냄)'}")

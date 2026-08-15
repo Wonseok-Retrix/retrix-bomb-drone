@@ -8,3 +8,6 @@ __pycache__/
 # 학습한 모델 파일 (용량이 큽니다)
 *.rpk
 packerOut.zip
+
+# 장비별 설정 (tools/init_config.sh가 config.example.yaml에서 생성)
+config.yaml

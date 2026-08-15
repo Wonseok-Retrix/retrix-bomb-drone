@@ -13,9 +13,10 @@
 읽는 설정은 config.yaml 의 control 블록 뿐입니다.
 
 P 제어는 "오차에 비례해서 반응한다"가 전부입니다.
-게인(gain)을 키우면 빠르지만 흔들리고, 줄이면 안정적이지만 굼뜹니다.
+게인은 따로 두지 않고 max_* 속도가 제어 강도와 OBC 명령 상한을 겸합니다.
+ArduPilot의 WP_SPD 계열 파라미터는 별도의 마지막 속도 상한입니다.
 
-    명령 = 오차 x 게인 x 최대속도      (단, 최대속도를 넘지 않음)
+    명령 = 오차 x max_* 속도      (단, max_* 를 넘지 않음)
 
 
 ★ 느린 카메라(1~2 fps)를 위한 감쇠
@@ -51,10 +52,6 @@ def _clamp(value, limit):
 
 class Controller:
     def __init__(self, c):
-        self.lateral_gain = c["lateral_gain"]
-        self.forward_gain = c["forward_gain"]
-        self.vertical_gain = c["vertical_gain"]
-
         self.max_lateral = c["max_lateral"]
         self.max_forward = c["max_forward"]
         self.max_vertical = c["max_vertical"]
@@ -90,15 +87,15 @@ class Controller:
 
         # 1) 좌우: 목표가 오른쪽에 있으면 오른쪽으로 이동 (기수는 그대로)
         err_x = _deadband(target.offset_x, self.deadband)
-        right = _clamp(err_x * self.lateral_gain * self.max_lateral, self.max_lateral)
+        right = _clamp(err_x * self.max_lateral, self.max_lateral)
 
         # 2) 상하: 화면 위쪽(-)이 기수 앞쪽이므로 부호를 뒤집는다
         err_y = _deadband(target.offset_y, self.deadband)
-        forward = _clamp(-err_y * self.forward_gain * self.max_forward, self.max_forward)
+        forward = _clamp(-err_y * self.max_forward, self.max_forward)
 
         # 3) 크기: 박스가 목표 크기보다 작으면(= 아직 높으면) 하강
         err_size = _deadband(self.target_size - target.size, self.size_deadband)
-        down = _clamp(err_size * self.vertical_gain * self.max_vertical, self.max_vertical)
+        down = _clamp(err_size * self.max_vertical, self.max_vertical)
 
         # 4) 정보가 오래될수록 힘을 뺍니다 (위 주석 참고)
         return Command(

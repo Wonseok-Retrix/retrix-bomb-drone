@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """3단계 점검: 서보 드로퍼.
 
-    python3 tools/check_dropper.py            # 열기/닫기 반복 테스트
+    python3 tools/check_dropper.py            # 키 입력으로 열기/닫기 테스트
     python3 tools/check_dropper.py --angle 45 # 특정 각도로 보내보기 (각도 찾기)
 
 ★ 프로펠러를 뺀 상태에서, 드론을 책상에 올려두고 하세요.
@@ -16,7 +16,9 @@
 import argparse
 import os
 import sys
+import termios
 import time
+import tty
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
@@ -28,7 +30,6 @@ from dropper import Dropper  # noqa: E402
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--angle", type=float, help="이 각도로 한 번 보내고 끝냅니다")
-    ap.add_argument("--count", type=int, default=3, help="열고 닫기 반복 횟수")
     args = ap.parse_args()
 
     cfg = load_config(os.path.join(ROOT, "config.yaml"))
@@ -59,17 +60,22 @@ def main():
             print("-> config.yaml 의 closed_angle / open_angle 에 적으세요")
             return 0
 
-        for i in range(args.count):
-            print(f"\n[{i + 1}/{args.count}] 닫기 (물건을 잡는 자세)")
-            dropper.close()
-            _wait(dropper, 2.0)
+        print("\n키를 눌러 서보를 제어하세요 (Enter 불필요).")
+        print("  o: 열기   c: 닫기   q: 종료")
+        while True:
+            key = _read_key().lower()
+            if key == "o":
+                print("\n열기 (물건을 놓는 자세)")
+                # drop()의 자동 닫힘/1회 제한 없이 자세를 직접 점검합니다.
+                dropper._move(dropper.open_angle)
+            elif key == "c":
+                print("\n닫기 (물건을 잡는 자세)")
+                dropper.close()
+                _wait(dropper, 0.6)
+            elif key == "q":
+                print("\n종료")
+                break
 
-            print(f"[{i + 1}/{args.count}] 열기 (투하)")
-            dropper.drop()
-            _wait(dropper, dropper.open_seconds + 1.0)
-            dropper.reset()   # 다시 테스트할 수 있게
-
-        print("\n서보가 두 자세를 오갔다면 정상입니다.")
         print("떨림이 심하면: 5V 전원이 FC 서보 레일에서 오는지, 접지가 Pi 와 공통인지 확인")
         return 0
     except KeyboardInterrupt:
@@ -87,6 +93,20 @@ def _wait(dropper, seconds):
     while time.monotonic() < end:
         dropper.update()
         time.sleep(0.05)
+
+
+def _read_key():
+    """터미널에서 Enter 없이 키 하나를 읽고 설정을 즉시 복원합니다."""
+    if not sys.stdin.isatty():
+        raise RuntimeError("키 입력 테스트는 터미널에서 실행해야 합니다")
+
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    try:
+        tty.setcbreak(fd)
+        return sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 
 if __name__ == "__main__":

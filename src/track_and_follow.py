@@ -107,14 +107,12 @@ def main():
 
     cfg = load_config(args.config)
 
-    use_dropper = cfg["dropper"]["enable"]
-
     print("=" * 60)
     print(f"  Target class : {cfg['detection']['target_class']}")
     print(f"  Model        : {os.path.basename(cfg['camera']['model'])}")
     print(f"  Camera       : {cfg['camera']['fps']} fps / {cfg['camera'].get('rotation', 0)} deg")
     print(f"  Command rate : {cfg['mavlink']['send_rate']} Hz")
-    print(f"  Dropper      : {'enabled' if use_dropper else 'disabled'}")
+    print(f"  Dropper      : {'active' if args.live else 'simulation'}")
     print(f"  Mode         : {'*** LIVE ***' if args.live else 'DRY RUN (no commands sent)'}")
     print("=" * 60)
 
@@ -170,18 +168,16 @@ def main():
                 ready, reason = False, "MAVLINK_DISABLED"
 
             # 과녁 위에 잘 정렬됐으면 투하합니다. 판단은 release.py 가 합니다.
-            if use_dropper:
-                if judge.update(target, ready) and dropper.drop():
-                    if link is not None:
-                        link.statustext("DROP")
-                dropper.update()   # 열어둔 시간이 지나면 스스로 닫힙니다
+            if judge.update(target, ready) and dropper.drop():
+                if link is not None:
+                    link.statustext("DROP")
+            dropper.update()   # 열어둔 시간이 지나면 스스로 닫힙니다
 
             now = time.monotonic()
             if now - last_log > 0.5:
                 _log(target, cmd, reason, n_det, stalled, controller)
-                if use_dropper:
-                    print(f"     dropper: {judge.reason}"
-                          f"{' | RELEASED' if dropper.dropped else ''}")
+                print(f"     dropper: {judge.reason}"
+                      f"{' | RELEASED' if dropper.dropped else ''}")
                 last_log = now
 
             time.sleep(max(0.0, period - (time.monotonic() - loop_start)))

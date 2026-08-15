@@ -25,8 +25,7 @@ import time
 class Dropper:
     def __init__(self, cfg, live=False):
         d = cfg["dropper"]
-        self.enabled = d["enable"]
-        self.simulate = not live or not self.enabled
+        self.simulate = not live
 
         self.closed_angle = d["closed_angle"]
         self.open_angle = d["open_angle"]
@@ -39,8 +38,7 @@ class Dropper:
         self._detach_at = None
 
         if self.simulate:
-            why = "dropper.enable=false" if not self.enabled else "DRY RUN"
-            print(f"[DROPPER] simulation mode ({why}) - servo will not move")
+            print("[DROPPER] simulation mode (DRY RUN) - servo will not move")
             return
 
         try:

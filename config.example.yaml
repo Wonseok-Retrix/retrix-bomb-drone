@@ -126,9 +126,6 @@ control:
 #  (FC 서보 레일에서는 5V 전원만 받습니다. 접지는 반드시 Pi 와 공통으로)
 # ============================================================
 dropper:
-  # ★ 처음에는 false. 지상에서 tools/check_dropper.py 로 확인한 뒤 켜세요 ★
-  enable: false
-
   pin: 18              # 신호선을 연결한 GPIO 번호 (BCM). GPIO18 = 물리핀 12
 
   # 서보 자세 두 개. tools/check_dropper.py 로 찾아서 적으세요

@@ -73,8 +73,8 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 | 단계      | 검증 유형           | 실행 명령                                    | 주요 확인 및 검증 사항                                                            |
 | :------ | :-------------- | :--------------------------------------- | :----------------------------------------------------------------------- |
 | **1단계** | 책상 위 카메라 점검     | `python3 tools/preview.py`               | `http://drone.local:8080` 접속 후 목표물 이동 시 `right`, `fwd` 제어 수치 부호 정상 동작 확인 |
-| **2단계** | 모의 비행 (DRY RUN) | `python3 src/track_and_follow.py`        | 명령 계산 로그 확인, MAVLink 명령 전송 없음                                                |
-| **3단계** | 지상 구동 점검        | `python3 src/track_and_follow.py --live` | 프로펠러 분리 상태 시동 → GUIDED 전환 → 모터 반응 확인                                     |
+| **2단계** | 모의 비행 (DRY RUN) | `python3 src/track_and_follow.py`        | 명령 계산 로그 확인, MAVLink 명령 전송 없음                                            |
+| **3단계** | 지상 구동 점검        | `python3 src/track_and_follow.py --live` | Arming  걸지 않은 상태로 GUIDED 전환 → 제어 신호 및 서보 반응 확인                           |
 | **4단계** | 실전 야외 비행        | `python3 src/track_and_follow.py --live` | LOITER 이륙·호버링 확인 → GUIDED 전환 → 자율 추적 비행                                  |
 
 ### 4단계 실전 비행 상세 지침

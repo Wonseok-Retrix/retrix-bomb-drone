@@ -5,8 +5,7 @@
     python3 tools/check_dropper.py --angle 45 # 특정 각도로 보내보기 (각도 찾기)
 
 ★ 프로펠러를 뺀 상태에서, 드론을 책상에 올려두고 하세요.
-★ config.yaml 의 dropper.enable 이 false 여도 이 도구는 서보를 움직입니다.
-  (지상 점검이 목적이므로)
+★ 이 도구는 지상 점검이 목적이므로 서보를 실제로 움직입니다.
 
 각도 찾는 법:
   1) --angle 로 0, 30, 60, 90 을 넣어보며 물건이 걸리는 각도와 빠지는 각도를 찾습니다
@@ -33,8 +32,6 @@ def main():
     args = ap.parse_args()
 
     cfg = load_config(os.path.join(ROOT, "config.yaml"))
-    # 지상 점검이므로 설정과 무관하게 서보를 실제로 움직입니다.
-    cfg["dropper"]["enable"] = True
 
     d = cfg["dropper"]
     print("=" * 52)

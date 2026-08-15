@@ -13,10 +13,17 @@ add_config() {   # 중복 없이 config.txt 에 한 줄 추가
   grep -qxF "$1" "$CONFIG" || echo "$1" | sudo tee -a "$CONFIG" > /dev/null
 }
 
-echo "== 1/5 시스템 업데이트 =="
+echo "== 1/6 네트워크: IPv4 강제 + 타임아웃 =="
+# 일부 미러(mirror.ossplanet.net)는 DNS에 IPv6 주소를 먼저 반환합니다.
+# IPv6 미지원 네트워크에서는 'Network is unreachable' 오류로 apt 설치가
+# 실패하므로, APT가 항상 IPv4로 연결하도록 강제하고 재시도/타임아웃을 지정합니다.
+printf 'Acquire::ForceIPv4 "true";\nAcquire::Retries "5";\nAcquire::http::Timeout "10";\nAcquire::https::Timeout "10";\n' \
+  | sudo tee /etc/apt/apt.conf.d/99retrix-force-ipv4 > /dev/null
+
+echo "== 2/6 시스템 업데이트 =="
 sudo apt update && sudo apt full-upgrade -y
 
-echo "== 2/5 IMX500 AI 카메라 =="
+echo "== 3/6 IMX500 AI 카메라 =="
 # imx500-all = 카메라 펌웨어 + 기본 모델(/usr/share/imx500-models) + .rpk 포장 도구
 sudo apt install -y imx500-all python3-picamera2 python3-simplejpeg python3-pil
 # picamera2.devices.imx500 는 __init__ 에서 postprocess 모듈들을 import 하고,
@@ -24,7 +31,7 @@ sudo apt install -y imx500-all python3-picamera2 python3-simplejpeg python3-pil
 # IMX500 클래스를 import 하려면 python3-opencv 가 있어야 합니다.
 sudo apt install -y python3-opencv
 
-echo "== 3/5 파이썬 패키지 =="
+echo "== 4/6 파이썬 패키지 =="
 # Bookworm 은 시스템 파이썬을 보호합니다(PEP 668).
 # apt 로 설치한 picamera2 를 그대로 쓰기 위해 venv 를 만들지 않습니다.
 sudo apt install -y python3-yaml
@@ -38,7 +45,7 @@ if ! sudo apt install -y python3-pymavlink; then
   pip3 install --break-system-packages pymavlink
 fi
 
-echo "== 4/5 시리얼 포트 (비행 컨트롤러 연결) =="
+echo "== 5/6 시리얼 포트 (비행 컨트롤러 연결) =="
 # Zero W / Zero 2 W 는 블루투스가 PL011(ttyAMA0)을 쓰고 있어서,
 # 그냥 두면 GPIO 14/15 에는 mini UART(ttyS0)가 붙습니다.
 # mini UART 는 자체 클럭이 없어 보드레이트가 CPU 클럭에 따라 흔들립니다.
@@ -51,7 +58,7 @@ sudo raspi-config nonint do_serial_hw 0     # 하드웨어 UART 켜기
 sudo raspi-config nonint do_serial_cons 1   # 시리얼 로그인 콘솔 끄기
 sudo usermod -aG dialout "$USER"
 
-echo "== 5/5 헤드리스 설정 =="
+echo "== 6/6 헤드리스 설정 =="
 # 화면 출력을 쓰지 않으므로 GPU 메모리를 최소로 (Zero W 의 512MB 확보)
 add_config "gpu_mem=64"
 

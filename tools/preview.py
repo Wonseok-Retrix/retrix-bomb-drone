@@ -198,7 +198,8 @@ def main():
                 draw.text(
                     (8, h - 14),
                     f"fwd {cmd.forward:+.2f}  right {cmd.right:+.2f}  "
-                    f"down {cmd.down:+.2f}  yaw {cmd.yaw_rate:+.0f}  size {target.size:.2f}",
+                    f"down {cmd.down:+.2f}  yaw {cmd.yaw_rate:+.0f}  "
+                    f"size {target.size:.2f}  conf {target.conf:.2f}",
                     fill=(255, 40, 40),
                 )
             else:

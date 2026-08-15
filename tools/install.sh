@@ -14,13 +14,11 @@ add_config() {   # 중복 없이 config.txt 에 한 줄 추가
 }
 
 echo "== 1/5 시스템 업데이트 =="
-# mirror.ossplanet.net 이 응답하지 않아 JAIST 미러(ftp.jaist.ac.jp/raspbian)로 교체합니다.
-# raspbian.raspberrypi.com 도 DNS 가 ossplanet.net IP 로 연결되는 문제가 있어 함께 교체합니다.
+# mirror.ossplanet.net / raspbian.raspberrypi.com 연결 실패 문제를 해결하기 위해
+# Raspbian 공식 미러 목록에 등록된 JAIST 미러(ftp.jaist.ac.jp/raspbian)를 직접 지정합니다.
 # 검증 완료: JAIST 에 trixie 배포판과 오류 패키지 6개가 모두 존재함 (2026-08-15)
-sudo sed -i \
-  -e 's|http://mirror\.ossplanet\.net/raspbian/raspbian|http://ftp.jaist.ac.jp/raspbian|g' \
-  -e 's|http://raspbian\.raspberrypi\.com/raspbian|http://ftp.jaist.ac.jp/raspbian|g' \
-  /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
+sudo cp /etc/apt/sources.list.d/raspi.list /etc/apt/sources.list.d/raspi.list.bak 2>/dev/null || true
+echo "deb http://ftp.jaist.ac.jp/raspbian/ trixie main" | sudo tee /etc/apt/sources.list.d/raspi.list > /dev/null
 sudo apt update && sudo apt full-upgrade -y
 
 echo "== 2/5 IMX500 AI 카메라 =="

@@ -53,6 +53,9 @@ Pi는 FC의 `UART4`(`SERIAL4`) 에 연결되어 있습니다. GCS 소프트웨�
 mavlink:
   connection: /dev/serial0
   baud: 57600
+  source_system: 1
+  source_component: 191
+  status_interval: 5
 ```
 
 ```bash

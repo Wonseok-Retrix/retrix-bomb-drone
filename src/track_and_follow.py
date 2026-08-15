@@ -134,8 +134,10 @@ def main():
     # 카메라가 이 시간 넘게 프레임을 아예 못 주면 "죽었다"고 보고 정지합니다.
     # 목표가 조금 오래된 것과는 다른 이야기입니다 (그건 controller 가 감쇠로 처리).
     stall_timeout = cfg["camera"]["stall_timeout"]
+    status_interval = max(1.0, float(cfg["mavlink"].get("status_interval", 5.0)))
 
     last_log = 0.0
+    last_status = 0.0
     was_ready = False
 
     try:
@@ -159,6 +161,13 @@ def main():
                 # 목표가 없어도 GUIDED 상태에서는 '정지' 명령을 계속 보냅니다.
                 # 통신이 끊기면 ArduCopter의 GUID_TIMEOUT 안전 동작이 정지시킵니다.
                 link.send_velocity(cmd)
+
+                now = time.monotonic()
+                if now - last_status >= status_interval:
+                    link.statustext(
+                        _tracking_status(target, n_det, stalled, ready, link)
+                    )
+                    last_status = now
             else:
                 ready, reason = False, "MAVLink 비활성"
 
@@ -203,6 +212,25 @@ def _log(target, cmd, reason, n_det, stalled, controller):
             f"-> fwd={cmd.forward:+.2f} right={cmd.right:+.2f} down={cmd.down:+.2f}m/s "
             f"yaw={cmd.yaw_rate:+.1f}deg/s | {reason}"
         )
+
+
+def _tracking_status(target, n_det, stalled, ready, link):
+    """GCS에 보낼 50바이트 이하의 ASCII 추적 상태."""
+    if ready:
+        state = "ACTIVE"
+    elif not link.armed:
+        state = "WAIT_ARM"
+    else:
+        state = f"WAIT_{link.mode or 'MODE'}"
+
+    if stalled:
+        tracking = "CAM_STALL"
+    elif target is None:
+        tracking = f"NO_TARGET({n_det})"
+    else:
+        tracking = f"LOCK({target.offset_x:+.2f},{target.offset_y:+.2f})"
+
+    return f"OBC TRACK {state} {tracking}"[:50]
 
 
 if __name__ == "__main__":

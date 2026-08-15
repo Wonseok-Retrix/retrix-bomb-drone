@@ -175,6 +175,14 @@ mavlink:
   connection: /dev/serial0
   baud: 57600
 
+  # FC와 같은 SYSID, 서로 다른 COMPID를 사용합니다.
+  # Mission Planner MAVLink Inspector: FC=1/1, OBC=1/191
+  source_system: 1
+  source_component: 191
+
+  # GCS에 OBC 추적 상태를 STATUSTEXT(INFO)로 보내는 주기(초)
+  status_interval: 5
+
   # ArduCopter GUIDED 속도 명령 전송 주기 (Hz).
   # GUID_TIMEOUT(기본 3초) 안에 새 명령이 없으면 기체가 정지합니다.
   # 지연과 패킷 유실을 고려해 최소 5, 권장 10 이상을 유지하세요.

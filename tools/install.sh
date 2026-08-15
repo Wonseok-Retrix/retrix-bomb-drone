@@ -32,14 +32,15 @@ sudo apt install -y python3-opencv
 echo "== 3/5 파이썬 패키지 =="
 # Bookworm 은 시스템 파이썬을 보호합니다(PEP 668).
 # apt 로 설치한 picamera2 를 그대로 쓰기 위해 venv 를 만들지 않습니다.
+# pip3 명령 사용 및 아래 폴백 설치를 위해 python3-pip 를 항상 설치합니다.
+sudo apt install -y python3-pip
 sudo apt install -y python3-yaml
 # gpiozero + lgpio = 서보 드로퍼를 GPIO 로 직접 제어하는 데 사용합니다
 sudo apt install -y python3-gpiozero python3-lgpio
 # pymavlink 는 apt 패키지를 우선 사용합니다.
-# (Raspberry Pi OS Lite 에는 pip3 가 기본 설치되어 있지 않습니다)
+# (pip 는 위에서 항상 설치했으므로 폴백 시 바로 사용 가능합니다)
 if ! sudo apt install -y python3-pymavlink; then
   echo "-- apt 에 python3-pymavlink 가 없어 pip 로 설치합니다 --"
-  sudo apt install -y python3-pip
   pip3 install --break-system-packages pymavlink
 fi
 

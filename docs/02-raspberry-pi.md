@@ -51,7 +51,7 @@ sudo reboot
 | **카메라** | `imx500-all` | IMX500 펌웨어, 기본 COCO 모델(`/usr/share/imx500-models/`), 패키징 툴 |
 | **영상 처리** | `python3-picamera2`, `python3-simplejpeg`, `python3-pil` | 카메라 제어 및 경량 영상 렌더링 |
 | **의존성** | `python3-opencv` | picamera2 IMX500 모듈 내부 의존성 |
-| **통신 / 설정** | `python3-pymavlink`, `python3-yaml` | FC MAVLink 통신 및 `config.yaml` 구조체 읽기 |
+| **통신 / 설정** | `python3-pymavlink`, `python3-yaml`, `python3-pip` | FC MAVLink 통신, `config.yaml` 구조체 읽기, pip3 명령 사용 |
 | **UART 복구** | `dtoverlay=disable-bt` | 블루투스를 비활성화하여 하드웨어 UART(PL011)를 GPIO 14/15 핀으로 복구 |
 | **시리얼 콘솔** | `raspi-config` | GPIO UART 활성화 및 시리얼 로그인 콘솔 비활성화 |
 | **메모리** | `gpu_mem=64` | 헤드리스 운영 환경 메모리 최적화 |

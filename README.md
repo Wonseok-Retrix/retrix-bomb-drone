@@ -55,6 +55,8 @@ src/
   track_and_follow.py         메인 제어 루프
 tools/
   install.sh                  라즈베리파이 자동 환경 설정 스크립트
+  install_autostart.sh        부팅 시 LIVE 모드 자동 실행 서비스 등록
+  uninstall_autostart.sh      LIVE 모드 자동 실행 서비스 해제
   check_camera.py             1단계 점검: 카메라 및 AI 모델 작동 테스트
   check_mavlink.py            2단계 점검: FC MAVLink 연결 상태 점검
   check_dropper.py            3단계 점검: 서보 드로퍼 각도 및 동작 테스트
@@ -88,4 +90,3 @@ assets/
 - [ArduPilot Copter — Guided Mode](https://ardupilot.org/copter/docs/ac2_guidedmode.html)
 - [ArduPilot — Copter Commands in Guided Mode](https://ardupilot.org/dev/docs/copter-commands-in-guided-mode.html)
 - [ArduPilot — MicoAir743v2](https://ardupilot.org/copter/docs/common-MicoAir743v2.html)
-

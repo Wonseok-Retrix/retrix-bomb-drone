@@ -3,6 +3,9 @@
 #   bash tools/install.sh
 set -e
 
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+bash "$PROJECT_ROOT/tools/init_config.sh"
+
 CONFIG=/boot/firmware/config.txt
 [ -f "$CONFIG" ] || CONFIG=/boot/config.txt   # 구버전 OS 호환
 

@@ -11,7 +11,9 @@ class StatusBuzzer:
     FREQUENCY = 1000
     BEEP_SECONDS = 0.06
     CYCLE_INTERVAL = 0.13
-    STARTUP_BEEPS = 3
+    MELODY_NOTE_SECONDS = 0.12
+    MELODY_GAP_SECONDS = 0.03
+    STARTUP_MELODY = (262, 294, 330, 349, 392)  # C4, D4, E4, F4, G4
 
     def __init__(self):
         self.enabled = True
@@ -53,7 +55,7 @@ class StatusBuzzer:
             count = 3 if release_waiting else 1
             gap = max(0.0, self.CYCLE_INTERVAL - self.BEEP_SECONDS)
             pattern = tuple(
-                (self.BEEP_SECONDS, gap if i < count - 1 else 0.0)
+                (self.FREQUENCY, self.BEEP_SECONDS, gap if i < count - 1 else 0.0)
                 for i in range(count)
             )
 
@@ -63,10 +65,9 @@ class StatusBuzzer:
             self._condition.notify_all()
 
     def _loop(self):
-        gap = max(0.0, self.CYCLE_INTERVAL - self.BEEP_SECONDS)
         startup = tuple(
-            (self.BEEP_SECONDS, gap if i < self.STARTUP_BEEPS - 1 else 0.0)
-            for i in range(self.STARTUP_BEEPS)
+            (frequency, self.MELODY_NOTE_SECONDS, self.MELODY_GAP_SECONDS)
+            for frequency in self.STARTUP_MELODY
         )
         self._play(startup, generation=None)
 
@@ -85,9 +86,10 @@ class StatusBuzzer:
         self._off()
 
     def _play(self, pattern, generation):
-        for duration, gap in pattern:
+        for frequency, duration, gap in pattern:
             if not self._wait(0.0, generation):
                 return
+            self._output.frequency = frequency
             self._output.value = 0.5
             if not self._wait(duration, generation):
                 self._off()

@@ -60,6 +60,7 @@ class VisionThread:
         self.tracker = tracker
         self._lock = threading.Lock()
         self._target = None
+        self._target_detected = False
         self._n_det = 0
         self._updated_at = 0.0
         self._frame_id = 0
@@ -80,24 +81,29 @@ class VisionThread:
                 continue
             with self._lock:
                 self._target = target
+                self._target_detected = any(
+                    d.label == self.tracker.target_class for d in detections
+                )
                 self._n_det = len(detections)
                 self._updated_at = time.monotonic()
                 self._frame_id += 1
 
     def latest(self, stall_timeout):
-        """(목표, 검출 개수, 카메라 멈춤 여부, 프레임 번호) 를 돌려줍니다.
+        """최신 목표, 현재 프레임 검출 여부와 카메라 상태를 돌려줍니다.
 
         목표가 얼마나 오래된 정보인지는 target.age 에 들어있고, 그걸로 명령 세기를
         줄이는 건 제어기가 합니다. 여기서 보는 건 '카메라 자체가 죽었는가' 뿐입니다.
         """
         with self._lock:
             target = self._target
+            target_detected = self._target_detected
             n_det = self._n_det
             updated_at = self._updated_at
             frame_id = self._frame_id
         if updated_at == 0.0 or time.monotonic() - updated_at > stall_timeout:
-            return None, n_det, True, frame_id  # 카메라가 프레임을 아예 못 주고 있음
-        return target, n_det, False, frame_id
+            # 카메라가 프레임을 아예 못 주고 있음
+            return None, False, n_det, True, frame_id
+        return target, target_detected, n_det, False, frame_id
 
     def stop(self):
         self._running = False
@@ -148,7 +154,9 @@ def main():
         while True:
             loop_start = time.monotonic()
 
-            target, n_det, stalled, frame_id = vision.latest(stall_timeout)
+            target, target_detected, n_det, stalled, frame_id = vision.latest(
+                stall_timeout
+            )
             age = target.age if target is not None else float("inf")
             cmd = controller.compute(target, age)
 
@@ -179,8 +187,10 @@ def main():
             release_now = judge.update(target, ready)
             if frame_id != last_buzzer_frame:
                 buzzer.notify_cycle(
-                    tracking=target is not None and not stalled,
-                    release_waiting=judge.holding and not dropper.dropped,
+                    tracking=target_detected and not stalled,
+                    release_waiting=(
+                        target_detected and judge.holding and not dropper.dropped
+                    ),
                 )
                 last_buzzer_frame = frame_id
 

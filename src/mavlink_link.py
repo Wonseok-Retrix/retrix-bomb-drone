@@ -1,8 +1,8 @@
 """pymavlink로 ArduCopter와 통신하고 AltHold RC override를 관리합니다.
 
 프로그램은 스스로 시동하거나 비행 모드를 바꾸지 않습니다. 시동 상태에서 CH8을
-HIGH로 올리고 네 개의 주 조종 스틱을 중립에 두면 OBC가 RC1~RC4를 대신
-입력합니다. 시동이 풀리거나 CH8을 LOW로 내리면 override를 해제합니다.
+HIGH로 올리면 OBC가 RC1~RC4를 즉시 대신 입력합니다. 시동이 풀리거나 CH8을
+LOW로 내리면 override를 해제합니다.
 
 override 활성 중에는 RC1~RC4 실제 스틱 입력을 사용하지 않습니다. 제어권 회수는
 override하지 않는 CH8 허용 스위치를 LOW로 내려 수행합니다.
@@ -68,8 +68,6 @@ class MavlinkLink:
         rc = m.get("rc_override", {})
         self.require_armed = s["require_armed"]
         self.rc_timeout = float(rc.get("input_timeout", 0.5))
-        self.neutral_deadband = int(rc.get("neutral_deadband", 50))
-        self.neutral_hold = float(rc.get("neutral_hold", 0.5))
         self.pwm_span = int(rc.get("pwm_span", 100))
         self.pwm_min = int(rc.get("pwm_min", 1100))
         self.pwm_max = int(rc.get("pwm_max", 1900))
@@ -131,7 +129,6 @@ class MavlinkLink:
         self._last_heartbeat = 0.0
         self._rc_values = {}
         self._last_rc = 0.0
-        self._neutral_since = None
         self._override_active = False
 
         # RC_CHANNELS를 10Hz로 요청합니다. 설정은 FC에 저장되지 않습니다.
@@ -174,7 +171,6 @@ class MavlinkLink:
 
         if not self._armed:
             self._override_active = False
-            self._neutral_since = None
 
         self._send_heartbeat()
 
@@ -205,25 +201,13 @@ class MavlinkLink:
     def ready_to_command(self):
         """시동 상태에서 OBC가 조종기를 대신 입력해도 되는지 반환합니다."""
         if self.require_armed and not self._armed:
-            self._neutral_since = None
             return False, "WAIT_ARM"
         if time.monotonic() - self._last_rc > self.rc_timeout:
-            self._neutral_since = None
             return False, "RC_INPUT_STALE"
         if self._rc_values.get(self.enable_channel, 0) < self.enable_pwm_min:
-            self._neutral_since = None
             return False, "RC_OVERRIDE_DISABLED"
         if self._override_active:
             return True, "RC_OVERRIDE"
-        if not self._sticks_neutral():
-            self._neutral_since = None
-            return False, "PILOT_INPUT"
-
-        now = time.monotonic()
-        if self._neutral_since is None:
-            self._neutral_since = now
-        if now - self._neutral_since < self.neutral_hold:
-            return False, "WAIT_NEUTRAL"
         return True, "RC_OVERRIDE_READY"
 
     def ready_to_release(self):
@@ -233,13 +217,6 @@ class MavlinkLink:
         if self._rc_values.get(self.enable_channel, 0) < self.enable_pwm_min:
             return False, "RELEASE_DISABLED"
         return True, "RELEASE_ENABLED"
-
-    def _sticks_neutral(self):
-        return all(
-            abs(self._rc_values.get(channel, 0) - self.trims[axis])
-            <= self.neutral_deadband
-            for axis, channel in self.channels.items()
-        )
 
     # ---------- 명령 ----------
 

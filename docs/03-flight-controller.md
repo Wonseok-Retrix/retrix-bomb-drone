@@ -94,12 +94,13 @@ Mission Planner의 Full Parameter Tree에서 다음을 설정합니다.
 
 1. 조종자가 직접 AltHold를 선택하고 시동·이륙합니다.
 2. `track_and_follow.py`를 실행합니다.
-3. 네 개의 주 스틱을 중립에 두고 CH8 override 허용 스위치를 HIGH로 올립니다.
+3. CH8 override 허용 스위치를 HIGH로 올립니다.
 4. 이상 동작 시 CH8을 LOW로 내려 즉시 제어권을 회수합니다.
 
 CH8이 LOW이거나 disarmed 상태이면 프로그램은 override를 해제합니다. 목표가 없으면
 중립 PWM을 보냅니다. override 중에는 RC1~RC4 실제 스틱 입력이 무시됩니다.
-OBC가 비행 모드를 검증하지 않으므로 AltHold 선택은 전적으로 조종자가 확인해야 합니다.
+OBC가 비행 모드와 시작 전 스틱 위치를 검증하지 않으므로 AltHold 선택과 CH8 조작은
+전적으로 조종자가 확인해야 합니다.
 
 > [!IMPORTANT]
 > ArduCopter 4.7에서는 주 스틱을 움직여도 override가 자동 해제되지 않습니다.

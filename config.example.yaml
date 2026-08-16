@@ -203,9 +203,7 @@ mavlink:
     throttle_trim: 1500
     yaw_trim: 1500
 
-    # 실제 스틱이 모두 trim ±50us 안에 0.5초 머물러야 OBC 제어를 시작합니다.
-    neutral_deadband: 50
-    neutral_hold: 0.5
+    # FC의 RC_CHANNELS 메시지가 이 시간보다 오래되면 override를 시작하지 않습니다.
     input_timeout: 0.5
 
     # 명령 단위당 PWM 변환 게인. 기본값에서는 수평 0.4, 수직 0.25 명령이

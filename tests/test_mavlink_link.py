@@ -29,8 +29,6 @@ def make_link():
     link = MavlinkLink.__new__(MavlinkLink)
     link.require_armed = True
     link.rc_timeout = 0.5
-    link.neutral_deadband = 50
-    link.neutral_hold = 0.5
     link.pwm_span = 100
     link.pwm_min = 1100
     link.pwm_max = 1900
@@ -49,7 +47,6 @@ def make_link():
     link._mode = "ALT_HOLD"
     link._rc_values = {1: 1500, 2: 1500, 3: 1500, 4: 1500, 8: 1900}
     link._last_rc = 10.0
-    link._neutral_since = None
     link._override_active = False
     return link
 
@@ -64,25 +61,22 @@ class FakeMav:
 
 class ReadyToCommandTests(unittest.TestCase):
     @patch("mavlink_link.time.monotonic", return_value=10.0)
-    def test_requires_neutral_hold_before_first_override(self, monotonic):
+    def test_starts_override_immediately_when_armed_and_ch8_high(self, _):
         link = make_link()
 
-        self.assertEqual(link.ready_to_command(), (False, "WAIT_NEUTRAL"))
-        monotonic.return_value = 10.5
         self.assertEqual(link.ready_to_command(), (True, "RC_OVERRIDE_READY"))
 
     @patch("mavlink_link.time.monotonic", return_value=10.0)
-    def test_pilot_input_blocks_initial_override(self, _):
+    def test_initial_stick_values_do_not_block_override(self, _):
         link = make_link()
         link._rc_values[1] = 1600
 
-        self.assertEqual(link.ready_to_command(), (False, "PILOT_INPUT"))
+        self.assertEqual(link.ready_to_command(), (True, "RC_OVERRIDE_READY"))
 
     @patch("mavlink_link.time.monotonic", return_value=10.5)
     def test_flight_mode_does_not_block_override(self, _):
         link = make_link()
         link._mode = "STABILIZE"
-        link._neutral_since = 10.0
 
         self.assertEqual(link.ready_to_command(), (True, "RC_OVERRIDE_READY"))
 

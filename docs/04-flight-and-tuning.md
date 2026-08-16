@@ -73,14 +73,14 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 | :------ | :-------------- | :--------------------------------------- | :----------------------------------------------------------------------- |
 | **1단계** | 책상 위 카메라 점검 | `python3 tools/preview.py` | `http://drone.local:8080` 접속 후 목표물 이동 시 `right`, `fwd` 제어 수치 부호 정상 동작 확인 |
 | **2단계** | 지상 구동 점검 | `python3 src/track_and_follow.py` | 프로펠러 분리 상태에서 MAVLink 연결, 모드 및 서보 반응 확인 |
-| **3단계** | 실전 야외 비행 | `python3 src/track_and_follow.py` | AltHold 수동 이륙 → 스틱 중립 → RC override 허용 → 추적 비행 |
+| **3단계** | 실전 야외 비행 | `python3 src/track_and_follow.py` | AltHold 수동 이륙 → CH8 RC override 허용 → 추적 비행 |
 
 ### 3단계 실전 비행 상세 지침
 
 1. **안전거리 확보**: 장애물이 없는 넓은 야외에서 조종자 및 관람자와 20m 이상 안전거리를 확보합니다.
 2. **이륙 및 수동 비행**: 조종기로 **AltHold** 모드에서 시동을 걸어 고도 5~8m로 안전하게 이륙시킨 후 기체 안정성을 확인합니다.
 3. **스크립트 실행**: SSH 터미널에서 `python3 src/track_and_follow.py`를 실행합니다.
-4. **OBC 제어 허용**: 네 개의 주 스틱을 중립에 둔 뒤 RC override 허용 스위치를 HIGH로 올립니다.
+4. **OBC 제어 허용**: RC override 허용 스위치(CH8)를 HIGH로 올립니다. 시작 전 RC1~RC4 위치는 검사하지 않습니다.
 5. **수동 제어권 확보**: 이상 동작 시 override 허용 스위치(CH8)를 LOW로 내립니다.
 
 > [!IMPORTANT]

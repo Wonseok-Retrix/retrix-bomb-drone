@@ -1,13 +1,14 @@
-"""Active buzzer status sounds, played without blocking the flight loop."""
+"""Passive buzzer status sounds, played without blocking the flight loop."""
 
 import threading
 import time
 
 
 class StatusBuzzer:
-    """Play the latest requested status pattern on an active GPIO buzzer."""
+    """Play the latest requested status pattern on a passive GPIO buzzer."""
 
     PIN = 23  # BCM GPIO23, physical pin 16
+    FREQUENCY = 1000
     BEEP_SECONDS = 0.06
     CYCLE_INTERVAL = 0.13
     STARTUP_BEEPS = 3
@@ -22,14 +23,17 @@ class StatusBuzzer:
         self._thread = None
 
         try:
-            from gpiozero import DigitalOutputDevice
+            from gpiozero import PWMOutputDevice
 
-            self._output = DigitalOutputDevice(
-                self.PIN, active_high=True, initial_value=False
+            self._output = PWMOutputDevice(
+                self.PIN,
+                active_high=True,
+                initial_value=0,
+                frequency=self.FREQUENCY,
             )
             self._thread = threading.Thread(target=self._loop, daemon=True)
             self._thread.start()
-            print(f"[BUZZER] active buzzer ready on GPIO{self.PIN}")
+            print(f"[BUZZER] passive buzzer ready on GPIO{self.PIN}")
         except Exception as e:
             # A buzzer failure must not stop tracking or flight control.
             print(f"[BUZZER] could not initialize ({e}) - sounds disabled")
@@ -84,7 +88,7 @@ class StatusBuzzer:
         for duration, gap in pattern:
             if not self._wait(0.0, generation):
                 return
-            self._output.on()
+            self._output.value = 0.5
             if not self._wait(duration, generation):
                 self._off()
                 return
@@ -106,7 +110,7 @@ class StatusBuzzer:
 
     def _off(self):
         if self._output is not None:
-            self._output.off()
+            self._output.value = 0
 
     def stop(self):
         """Silence and release the GPIO device."""

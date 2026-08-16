@@ -10,8 +10,6 @@ class StatusBuzzer:
     PIN = 23  # BCM GPIO23, physical pin 16
     BEEP_SECONDS = 0.06
     CYCLE_INTERVAL = 0.13
-    RELEASE_BEEPS_PER_SECOND = 6
-    RELEASE_INTERVAL = 1.0 / RELEASE_BEEPS_PER_SECOND
     STARTUP_BEEPS = 3
 
     def __init__(self):
@@ -20,7 +18,7 @@ class StatusBuzzer:
         self._condition = threading.Condition()
         self._generation = 0
         self._pattern = ()
-        self._repeat_interval = None
+        self._continuous = False
         self._stopped = False
         self._thread = None
 
@@ -41,27 +39,33 @@ class StatusBuzzer:
                 self._output.close()
                 self._output = None
 
-    def notify_cycle(self, tracking, release_waiting=False):
-        """Update status, keeping the release-ready sound independent of frames."""
+    def notify_cycle(self, tracking=None, release_waiting=False):
+        """Play frame beeps and keep release waiting as a continuous tone."""
         if not self.enabled:
             return
 
-        repeat_interval = None
         if release_waiting:
-            pattern = ((self.BEEP_SECONDS, 0.0),)
-            repeat_interval = self.RELEASE_INTERVAL
+            pattern = ()
+            continuous = True
+        elif tracking is None:
+            # No new camera frame. Only stop a continuous release-waiting tone.
+            if not self._continuous:
+                return
+            pattern = ()
+            continuous = False
         elif not tracking:
             pattern = ()
+            continuous = False
         else:
             pattern = ((self.BEEP_SECONDS, 0.0),)
+            continuous = False
 
         with self._condition:
-            # Camera frames may arrive faster than the release-ready cadence.
-            # Do not restart an already-running cadence for every frame.
-            if repeat_interval is not None and self._repeat_interval is not None:
+            # Do not restart the continuous tone on every control-loop cycle.
+            if continuous and self._continuous:
                 return
             self._pattern = pattern
-            self._repeat_interval = repeat_interval
+            self._continuous = continuous
             self._generation += 1
             self._condition.notify_all()
 
@@ -82,12 +86,12 @@ class StatusBuzzer:
                 if self._stopped:
                     break
                 pattern = self._pattern
-                repeat_interval = self._repeat_interval
+                continuous = self._continuous
                 handled = self._generation
-            if repeat_interval is None:
-                self._play(pattern, generation=handled)
+            if continuous:
+                self._play_continuous(handled)
             else:
-                self._play_repeating(repeat_interval, handled)
+                self._play(pattern, generation=handled)
 
         self._off()
 
@@ -103,34 +107,13 @@ class StatusBuzzer:
             if not self._wait(gap, generation):
                 return
 
-    def _play_repeating(self, interval, generation):
-        """Repeat from fixed deadlines so processing time cannot shift the cadence."""
-        next_start = time.monotonic()
-        while True:
-            if not self._wait_until(next_start, generation):
-                return
-            self._output.on()
-            if not self._wait(self.BEEP_SECONDS, generation):
-                self._off()
-                return
-            self._off()
-
-            next_start += interval
-            now = time.monotonic()
-            if next_start < now:
-                missed = int((now - next_start) / interval) + 1
-                next_start += missed * interval
-
-    def _wait_until(self, deadline, generation):
+    def _play_continuous(self, generation):
+        self._output.on()
         with self._condition:
-            while not self._stopped:
-                if self._generation != generation:
-                    return False
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    return True
-                self._condition.wait(remaining)
-        return False
+            self._condition.wait_for(
+                lambda: self._stopped or self._generation != generation
+            )
+        self._off()
 
     def _wait(self, seconds, generation):
         deadline = time.monotonic() + seconds

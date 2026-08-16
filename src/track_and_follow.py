@@ -188,13 +188,12 @@ def main():
 
             # 과녁 위에 잘 정렬됐으면 투하합니다. 판단은 release.py 가 합니다.
             release_now = judge.update(target, release_ready)
-            if new_frame:
-                buzzer.notify_cycle(
-                    tracking=target_detected and not stalled,
-                    release_waiting=(
-                        target_detected and judge.holding and not dropper.dropped
-                    ),
-                )
+            buzzer.notify_cycle(
+                tracking=(target_detected and not stalled) if new_frame else None,
+                release_waiting=(
+                    target_detected and judge.holding and not dropper.dropped
+                ),
+            )
 
             if release_now and dropper.drop():
                 if link is not None:

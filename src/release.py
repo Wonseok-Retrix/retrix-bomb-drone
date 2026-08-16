@@ -68,7 +68,7 @@ class ReleaseJudge:
 
     def _check(self, target, ready):
         if not ready:
-            return False, "CONTROL_NOT_READY"    # GUIDED 아님 / 시동 안 걸림
+            return False, "CONTROL_NOT_READY"    # AltHold override 또는 시동 준비 안 됨
         if target is None:
             return False, "NO_TARGET"
 

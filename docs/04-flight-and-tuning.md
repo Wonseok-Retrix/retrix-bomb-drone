@@ -12,7 +12,7 @@
 
 ### 제어 구조 (`src/controller.py`)
 
-하방 카메라 영상의 위치 오차를 P 제어(비례 제어)를 통해 수평/수직 이동 속도 명령으로 변환합니다. 게인은 따로 두지 않고 `max_lateral`, `max_forward`, `max_vertical`이 비례 제어 강도와 OBC 명령 상한을 겸합니다. ArduPilot의 `WP_SPD` 계열 파라미터는 별도의 마지막 속도 상한입니다.
+하방 카메라 영상의 위치 오차를 P 제어(비례 제어)를 통해 수평/수직 RC 명령으로 변환합니다. `max_lateral`, `max_forward`, `max_vertical`이 비례 제어 강도와 OBC 명령 상한을 겸하고, 축별 `*_pwm_per_unit`가 이를 PWM 편차로 바꿉니다. AltHold의 실제 속도는 기체 튜닝과 환경에 따라 달라집니다.
 
 ```
    목표가 화면 오른쪽에 위치   →   오른쪽으로 이동 (right > 0)
@@ -46,7 +46,7 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 감쇠 상태는 실행 로그의 `age`(정보의 나이)와 `x`(적용된 감쇠 비율)로 확인합니다.
 
 ```
-[OK] x=+0.42 y=-0.11 size=0.21 conf=0.78 age=0.35s x0.94 -> fwd=+0.05 right=+0.16 down=+0.03m/s
+[OK] x=+0.42 y=-0.11 size=0.21 conf=0.78 age=0.35s x0.94 -> fwd=+0.05 right=+0.16 down=+0.03
 ```
 
 `age`가 0에서 점점 커지다가 `x0.00`에 도달한 뒤 새 프레임이 들어와 다시 0으로 떨어지는 패턴이 반복되면 정상입니다. 카메라가 1~2 fps로 동작하고 있다는 뜻입니다.
@@ -73,18 +73,18 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 | :------ | :-------------- | :--------------------------------------- | :----------------------------------------------------------------------- |
 | **1단계** | 책상 위 카메라 점검 | `python3 tools/preview.py` | `http://drone.local:8080` 접속 후 목표물 이동 시 `right`, `fwd` 제어 수치 부호 정상 동작 확인 |
 | **2단계** | 지상 구동 점검 | `python3 src/track_and_follow.py` | 프로펠러 분리 상태에서 MAVLink 연결, 모드 및 서보 반응 확인 |
-| **3단계** | 실전 야외 비행 | `python3 src/track_and_follow.py` | LOITER 이륙·호버링 확인 → GUIDED 전환 → 자율 추적 비행 |
+| **3단계** | 실전 야외 비행 | `python3 src/track_and_follow.py` | AltHold 수동 이륙 → 스틱 중립 → RC override 허용 → 추적 비행 |
 
 ### 3단계 실전 비행 상세 지침
 
 1. **안전거리 확보**: 장애물이 없는 넓은 야외에서 조종자 및 관람자와 20m 이상 안전거리를 확보합니다.
-2. **이륙 및 수동 정지비행**: 조종기로 **LOITER** 모드에서 시동을 걸어 고도 5~8m로 안전하게 이륙시킨 후 기체 안정성을 확인합니다.
-3. **스크립트 실행**: SSH 터미널에서 `python3 src/track_and_follow.py` 명령을 실행합니다 (`GUIDED 아님` 로그 확인).
-4. **GUIDED 전환**: Mission Planner의 Actions 화면에서 **GUIDED**로 전환하여 자율 추적을 시작합니다. 운용 전에 조종기 모드 스위치로 즉시 LOITER 복귀가 되는지 확인하세요.
-5. **수동 제어권 확보 (비상 조치)**: 기체 비행 이상 발생 시 **즉시 조종기 스위치를 LOITER 또는 STABILIZE로 전환**하세요.
+2. **이륙 및 수동 비행**: 조종기로 **AltHold** 모드에서 시동을 걸어 고도 5~8m로 안전하게 이륙시킨 후 기체 안정성을 확인합니다.
+3. **스크립트 실행**: SSH 터미널에서 `python3 src/track_and_follow.py`를 실행합니다.
+4. **OBC 제어 허용**: 네 개의 주 스틱을 중립에 둔 뒤 RC override 허용 스위치를 HIGH로 올립니다.
+5. **수동 제어권 확보**: 이상 동작 시 override 허용 스위치(CH8)를 LOW로 내립니다.
 
 > [!IMPORTANT]
-> **조종기 비행 모드 스위치는 최우선 비상 복귀 수단입니다.** GUIDED를 벗어나면 추적 스크립트는 추적 속도 명령을 즉시 0으로 바꿉니다. 통신 자체가 끊기면 ArduCopter의 `GUID_TIMEOUT`이 기체를 정지시킵니다.
+> **CH8 override 허용 스위치가 최우선 비상 복귀 수단입니다.** AltHold 이탈도 override를 해제합니다. RC1~RC4 스틱만 움직여서는 해제되지 않으며, OBC 통신이 끊기면 `RC_OVERRIDE_TIME` 뒤 실제 수신기 입력으로 돌아옵니다.
 
 ---
 
@@ -93,9 +93,9 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 | 설정 항목                   | 현재 설정값      | 1~2 fps 기준 튜닝 이유              |
 | :---------------------- | :---------- | :---------------------------- |
 | `camera.fps`            | `2`         | AI 카메라 실측 1~2 fps 동작 반영       |
-| `control.max_lateral`   | `0.4` (m/s) | 좌우 P 제어 강도 및 OBC 명령 상한       |
-| `control.max_forward`   | `0.4` (m/s) | 전후 P 제어 강도 및 OBC 명령 상한       |
-| `control.max_vertical`  | `0.25` (m/s) | 상하 P 제어 강도 및 OBC 명령 상한       |
+| `control.max_lateral`   | `0.4` | 좌우 P 제어 강도 및 OBC 명령 상한       |
+| `control.max_forward`   | `0.4` | 전후 P 제어 강도 및 OBC 명령 상한       |
+| `control.max_vertical`  | `0.25` | 상하 P 제어 강도 및 OBC 명령 상한       |
 | `control.stale_stop`    | `1.2` (초)   | 프레임 간격 사이 감속 정지 유도            |
 | `tracking.smoothing`    | `0.8`       | 프레임이 귀하므로 평활화 지연 최소화          |
 | `tracking.lost_timeout` | `3.0` (초)   | 1~2프레임 순간 미검출 시 추적 포기 방지      |
@@ -128,8 +128,8 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 
 ### 권장 튜닝 순서
 
-1. `max_vertical: 0`으로 두고 고도는 조종자가 수동 유지합니다. `max_lateral`과 `max_forward`를 `0.3m/s`부터 올리며 **목표 상공에 안정적으로 정지 비행하는 성능**부터 맞춥니다.
-2. 수평 추적이 안정되면 `max_vertical`을 `0.15m/s`부터 단계적으로 높여 **자동 고도 강하**를 활성화합니다.
+1. `max_vertical: 0`으로 두고 고도는 조종자가 수동 유지합니다. `max_lateral`과 `max_forward`를 `0.3`부터 올리며 **목표 상공에 안정적으로 정지 비행하는 성능**부터 맞춥니다.
+2. 수평 추적이 안정되면 `max_vertical`을 `0.15`부터 단계적으로 높여 **자동 고도 강하**를 활성화합니다.
 3. `target_size`를 키우면 최종 접근 고도가 낮아집니다. **한 번에 0.05씩만** 조정하세요.
 
 > 속도를 높이다가 헌팅이 발생하면 직전에 안정적이었던 `max_*` 값으로 되돌립니다.

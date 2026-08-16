@@ -6,7 +6,7 @@
     sudo systemctl stop retrix-bomb-drone.service
     python3 tools/test_obc_heartbeat.py
 
-다음 메시지를 OBC(SYSID 1 / COMPID 191)에서 전송합니다.
+다음 메시지를 OBC(SYSID 255 / COMPID 191)에서 전송합니다.
 
 * HEARTBEAT: 1 Hz, type=18 (ONBOARD_CONTROLLER)
 * NAMED_VALUE_INT: 1 Hz, OBC_COUNT 증가값
@@ -34,8 +34,8 @@ def parse_args():
     parser.add_argument(
         "--system-id",
         type=int,
-        default=1,
-        help="vehicle SYSID used by the OBC (default: 1)",
+        default=255,
+        help="GCS SYSID used by the OBC (default: 255)",
     )
     parser.add_argument(
         "--component-id",

@@ -37,8 +37,8 @@ python3 src/track_and_follow.py
 ```
 
 > `track_and_follow.py`는 별도 실행 모드 없이 MAVLink와 GPIO 출력을 활성화합니다.
-> non-GUIDED 또는 disarmed 상태에서는 0 속도만 전송하지만, 지상 점검 시에는 반드시
-> 프로펠러를 분리하세요.
+> AltHold가 아니거나 disarmed 상태에서는 RC override를 해제하지만, 지상 점검 시에는
+> 반드시 프로펠러를 분리하세요.
 
 ---
 
@@ -50,8 +50,8 @@ config.yaml                   * 장비별 튜닝 파일 (Git에서 제외, 설�
 src/
   detector.py                 IMX500 AI 카메라 객체 검출
   tracker.py                  검출 결과 중 단일 목표 선택 및 추적
-  command.py                  드론 속도 제어 명령 구조체
-  controller.py               하방 카메라 기반 P 제어기 (위치 오차 -> 이동 속도)
+  command.py                  드론 추적 제어 명령 구조체
+  controller.py               하방 카메라 기반 P 제어기 (위치 오차 -> 스틱 강도)
   buzzer.py                   액티브 부저 상태음 (GPIO23)
   release.py                  자동 투하 조건 판단
   dropper.py                  서보 드로퍼 구동 (Pi GPIO 직접 제어)

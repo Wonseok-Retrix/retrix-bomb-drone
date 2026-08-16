@@ -6,11 +6,11 @@
 
 구조:
     [카메라 스레드]  검출 --> 추적 --> 목표 저장        (camera.fps 속도, 1~2 fps)
-    [메인 루프]      목표 --> P제어 --> MAVLink 전송    (mavlink.send_rate 속도, 10Hz)
+    [메인 루프]      목표 --> P제어 --> RC override     (mavlink.send_rate 속도, 10Hz)
 
 두 개를 분리한 이유:
-  ArduCopter GUIDED 속도 명령은 GUID_TIMEOUT(기본 3초) 동안 끊기면 기체가 정지합니다.
-  카메라가 1~2 fps 로 느려도 명령 스트림은 10Hz 로 일정하게 유지되어야 합니다.
+  ArduCopter RC override는 RC_OVERRIDE_TIME 동안 끊기면 실제 수신기 입력으로
+  돌아갑니다. 카메라가 1~2 fps로 느려도 override는 10Hz로 일정하게 보냅니다.
 
 카메라가 느린 것에 대한 대응:
   프레임 사이(최대 1초)에는 볼 수 있는 게 없습니다. 그 시간 동안 같은 속도로
@@ -161,20 +161,21 @@ def main():
                 link.poll()
                 ready, reason = link.ready_to_command()
                 if ready and not was_ready:
-                    link.statustext("TRACKING: guided control ON")
+                    link.statustext("TRACKING: AltHold RC override ON")
                 was_ready = ready
 
-                if not ready:
+                if ready:
+                    # 목표가 없으면 중립 스틱을 계속 보냅니다. override 활성 중에는
+                    # RC1~RC4 실제 입력 대신 OBC가 만든 PWM이 적용됩니다.
+                    link.send_override(cmd)
+                else:
                     cmd = Command()
-
-                # 목표가 없어도 GUIDED 상태에서는 '정지' 명령을 계속 보냅니다.
-                # 통신이 끊기면 ArduCopter의 GUID_TIMEOUT 안전 동작이 정지시킵니다.
-                link.send_velocity(cmd)
+                    link.release_override()
 
                 now = time.monotonic()
                 if now - last_status >= status_interval:
                     link.statustext(
-                        _tracking_status(target, n_det, stalled, ready, link)
+                        _tracking_status(target, n_det, stalled, ready, reason)
                     )
                     last_status = now
             else:
@@ -195,7 +196,7 @@ def main():
                     link.statustext("DROP")
             dropper.update()   # 열어둔 시간이 지나면 스스로 닫힙니다
 
-            # 투하한 목표가 사라지거나 GUIDED 제어가 해제되면 다음 투하를 재무장합니다.
+            # 투하한 목표가 사라지거나 AltHold OBC 제어가 해제되면 재무장합니다.
             if dropper.dropped and (target is None or not ready):
                 reset_reason = "TARGET_LOST" if target is None else "CONTROL_NOT_READY"
                 print(f"[DROPPER] reset ({reset_reason}) - ready for next target")
@@ -221,7 +222,7 @@ def main():
     finally:
         vision.stop()
         if link is not None:
-            link.send_stop()
+            link.release_override()
         buzzer.stop()
         dropper.stop()
         detector.close()
@@ -238,19 +239,17 @@ def _log(target, cmd, reason, n_det, stalled, controller):
             f"[OK] x={target.offset_x:+.2f} y={target.offset_y:+.2f} "
             f"size={target.size:.2f} conf={target.conf:.2f} "
             f"age={age:.2f}s x{controller.freshness(age):.2f} "
-            f"-> fwd={cmd.forward:+.2f} right={cmd.right:+.2f} down={cmd.down:+.2f}m/s "
+            f"-> fwd={cmd.forward:+.2f} right={cmd.right:+.2f} down={cmd.down:+.2f} "
             f"yaw={cmd.yaw_rate:+.1f}deg/s | {reason}"
         )
 
 
-def _tracking_status(target, n_det, stalled, ready, link):
+def _tracking_status(target, n_det, stalled, ready, reason):
     """GCS에 보낼 50바이트 이하의 ASCII 추적 상태."""
     if ready:
         state = "ACTIVE"
-    elif not link.armed:
-        state = "WAIT_ARM"
     else:
-        state = f"WAIT_{link.mode or 'MODE'}"
+        state = reason.split(" ", 1)[0]
 
     if stalled:
         tracking = "CAM_STALL"

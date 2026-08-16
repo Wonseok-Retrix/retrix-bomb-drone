@@ -1,6 +1,6 @@
 # 03. 비행 컨트롤러 설정 (MicoAir 743 v2 / ArduCopter)
 
-비행 컨트롤러와 Mission Planner를 연결하고 ArduCopter, MAVLink 통신, GUIDED 제어 및 안전장치를 설정하는 절차입니다.
+비행 컨트롤러와 Mission Planner를 연결하고 ArduCopter, MAVLink 통신, AltHold RC override 및 안전장치를 설정하는 절차입니다.
 
 ---
 
@@ -31,9 +31,10 @@ Mission Planner의 **Setup → Mandatory Hardware**에서 다음 항목을 완�
 3. 조종기 입력 및 모드 스위치
 4. ESC와 모터 순서·회전 방향
 5. 배터리 전압·전류 모니터
-6. GPS와 EKF 상태
+6. 기압계와 EKF 상태
 
-GUIDED 속도 제어에는 유효한 위치 추정이 필요합니다. 기본 구성에서는 실외 GPS 3D Fix와 정상 EKF 상태를 확인한 후 진입하세요.
+AltHold는 GPS 없이 기압계와 IMU로 고도를 유지합니다. GPS가 없으면 수평 위치는
+유지되지 않으며, OBC와 조종자 모두 스틱을 놓은 동안 바람에 따라 드리프트할 수 있습니다.
 
 ---
 
@@ -53,7 +54,7 @@ Pi는 FC의 `UART4`(`SERIAL4`) 에 연결되어 있습니다. GCS 소프트웨�
 mavlink:
   connection: /dev/serial0
   baud: 57600
-  source_system: 1
+  source_system: 255
   source_component: 191
   status_interval: 5
 ```
@@ -67,33 +68,42 @@ ls -l /dev/serial0        # ttyAMA0을 가리키는지 확인
 
 ---
 
-## 4. GUIDED 제어 설정
+## 4. AltHold RC override 설정
 
-이 프로젝트는 `SET_POSITION_TARGET_LOCAL_NED`를 `MAV_FRAME_BODY_OFFSET_NED` 프레임으로 10Hz 전송합니다. 속도 방향은 기체 기준 전방, 오른쪽, 아래쪽입니다.
+이 프로젝트는 `RC_CHANNELS_OVERRIDE`를 10Hz로 전송해 AltHold의 roll, pitch,
+throttle, yaw 입력을 대신합니다. GPS 위치 명령은 사용하지 않습니다. OBC 명령은
+`control.max_*`의 명령을 축별 `*_pwm_per_unit` 게인으로 PWM 편차로 바꾸고,
+`mavlink.rc_override.pwm_span`에서 최종 편차를 제한합니다.
 
-OBC의 기본 명령 한계는 좌우·전후 각각 `0.4m/s`, 상승·하강 `0.25m/s`입니다. 수평 한계는 축별 값이므로 대각선 명령의 최대 크기는 약 `0.57m/s`(`sqrt(0.4² + 0.4²)`)입니다.
+throttle도 override하므로 목표가 작으면 하강하고 목표가 너무 크면 상승합니다.
+목표가 없거나 크기 오차가 데드밴드 안이면 중립 throttle을 보내 AltHold가 현재
+고도를 유지합니다. `control.max_vertical: 0`이면 자동 상승·하강이 꺼집니다.
 
-| ArduCopter 4.7 파라미터 | 시작 권장값    | 역할                           |
-| :------------------ | :-------- | :--------------------------- |
-| `GUID_TIMEOUT`      | `3.0s`    | 속도 명령이 끊기면 감속·정지하는 시간        |
-| `WP_SPD`            | `0.6m/s`  | 대각선 명령을 포함하는 GUIDED 수평 속도 상한 |
-| `WP_SPD_UP`         | `0.25m/s` | GUIDED 상승 속도 상한              |
-| `WP_SPD_DN`         | `0.25m/s` | GUIDED 하강 속도 상한              |
+Mission Planner의 Full Parameter Tree에서 다음을 설정합니다.
 
-> [!NOTE]
-> ArduCopter 4.6 이하에서는 구버전 파라미터인 `WPNAV_SPEED`, `WPNAV_SPEED_UP`, `WPNAV_SPEED_DN`을 사용하며 단위는 `cm/s`입니다. 구버전에는 각각 `60`, `25`, `25`를 입력합니다.
+| ArduCopter 파라미터 | 설정값 | 역할 |
+| :--- | :--- | :--- |
+| `MAV_GCS_SYSID` | `255` | 이 SYSID에서 온 RC override만 허용 |
+| `RC8_OPTION` | `46` | CH8 스위치로 RC override 허용/차단 |
+| `RC_OVERRIDE_TIME` | `0.5s` | OBC 명령 단절 시 실제 수신기 입력으로 복귀 |
 
-프로그램은 안전상 스스로 시동하거나 GUIDED로 전환하지 않습니다.
+사용하는 보조 채널이 CH8이 아니면 `RCx_OPTION=46`과 `config.yaml`의
+`enable_channel`을 같은 채널로 바꿉니다.
 
-1. LOITER에서 조종자가 시동하고 이륙합니다.
+프로그램은 안전상 스스로 시동하거나 AltHold로 전환하지 않습니다.
+
+1. 조종자가 직접 시동하고 AltHold로 이륙합니다.
 2. `track_and_follow.py`를 실행합니다.
-3. Mission Planner에서 GUIDED로 전환합니다.
-4. 이상 동작 시 조종기 스위치를 LOITER 또는 STABILIZE로 바꿉니다.
+3. 네 개의 주 스틱을 중립에 두고 CH8 override 허용 스위치를 HIGH로 올립니다.
+4. 이상 동작 시 CH8을 LOW로 내려 즉시 제어권을 회수합니다.
 
-GUIDED가 아닌 동안 프로그램은 추적 명령을 차단합니다. GUIDED에서 목표가 없으면 0m/s 정지 명령을 계속 보냅니다.
+AltHold가 아니거나 CH8이 LOW이면 프로그램은 override를 해제합니다. 목표가 없으면
+중립 PWM을 보냅니다. override 중에는 RC1~RC4 실제 스틱 입력이 무시됩니다.
 
 > [!IMPORTANT]
-> `GUID_TIMEOUT`은 명령 단절 시 기체를 정지시키지만 자동으로 LOITER나 RTL로 바꾸지는 않습니다. 조종기·배터리·GCS failsafe와 지오펜스를 별도로 설정해야 합니다.
+> ArduCopter 4.7에서는 주 스틱을 움직여도 override가 자동 해제되지 않습니다.
+> 프로펠러를 제거한 상태에서 CH8 LOW와 AltHold 이탈 시 RC1~RC4가 실제 조종기
+> 입력으로 즉시 돌아오는지 먼저 검증하세요.
 
 ---
 
@@ -137,7 +147,8 @@ mode=LOITER     armed=False batt=12.4V gps fix=3 sats=11 yaw=+87deg
 | 하트비트 미수신 | TX/RX 교차, 공통 GND, 양쪽 baud 확인 |
 | 하트비트 미수신 | 연결 UART에 대응하는 `SERIALx_PROTOCOL=2`인지 확인 |
 | `UNSUPPORTED_AUTOPILOT` | MicoAir743v2에 ArduCopter 펌웨어가 설치됐는지 확인 |
-| `GUIDED 아님` 지속 | GPS/EKF 상태 확인 후 Mission Planner에서 GUIDED 전환 |
+| `NOT_ALT_HOLD` 지속 | 조종기 비행 모드 스위치와 현재 AltHold 모드 확인 |
+| `RC_OVERRIDE_DISABLED` 지속 | `RC8_OPTION=46` 확인 후 CH8 스위치를 HIGH로 전환 |
 | 배터리·GPS·ATTITUDE 누락 | `SERIALx` stream rate와 메시지 요청 응답 확인 |
 | `Permission denied` | `sudo usermod -aG dialout pi` 후 재로그인 |
 

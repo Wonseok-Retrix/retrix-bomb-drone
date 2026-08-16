@@ -160,8 +160,9 @@ def main():
             if link is not None:
                 link.poll()
                 ready, reason = link.ready_to_command()
+                release_ready, release_reason = link.ready_to_release()
                 if ready and not was_ready:
-                    link.statustext("TRACKING: AltHold RC override ON")
+                    link.statustext("TRACKING: RC override ON")
                 was_ready = ready
 
                 if ready:
@@ -180,9 +181,10 @@ def main():
                     last_status = now
             else:
                 ready, reason = False, "MAVLINK_DISABLED"
+                release_ready, release_reason = False, "MAVLINK_DISABLED"
 
             # 과녁 위에 잘 정렬됐으면 투하합니다. 판단은 release.py 가 합니다.
-            release_now = judge.update(target, ready)
+            release_now = judge.update(target, release_ready)
             if new_frame:
                 buzzer.notify_cycle(
                     tracking=target_detected and not stalled,
@@ -196,9 +198,11 @@ def main():
                     link.statustext("DROP")
             dropper.update()   # 열어둔 시간이 지나면 스스로 닫힙니다
 
-            # 투하한 목표가 사라지거나 AltHold OBC 제어가 해제되면 재무장합니다.
-            if dropper.dropped and (target is None or not ready):
-                reset_reason = "TARGET_LOST" if target is None else "CONTROL_NOT_READY"
+            # 투하한 목표가 사라지거나 CH8 투하 허용이 꺼지면 재무장합니다.
+            if dropper.dropped and (target is None or not release_ready):
+                reset_reason = (
+                    "TARGET_LOST" if target is None else release_reason
+                )
                 print(f"[DROPPER] reset ({reset_reason}) - ready for next target")
                 dropper.reset()
                 judge.reset()

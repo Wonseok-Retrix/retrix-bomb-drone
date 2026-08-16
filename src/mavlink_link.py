@@ -1,11 +1,11 @@
 """pymavlink로 ArduCopter와 통신하고 AltHold RC override를 관리합니다.
 
-프로그램은 스스로 시동하거나 비행 모드를 바꾸지 않습니다. 조종자가 AltHold로
-전환하고 네 개의 주 조종 스틱을 중립에 둔 동안에만 OBC가 RC1~RC4를 대신
-입력합니다. 모드를 바꾸거나 시동이 풀리면 즉시 override를 해제합니다.
+프로그램은 스스로 시동하거나 비행 모드를 바꾸지 않습니다. 시동 상태에서 CH8을
+HIGH로 올리고 네 개의 주 조종 스틱을 중립에 두면 OBC가 RC1~RC4를 대신
+입력합니다. 시동이 풀리거나 CH8을 LOW로 내리면 override를 해제합니다.
 
 override 활성 중에는 RC1~RC4 실제 스틱 입력을 사용하지 않습니다. 제어권 회수는
-override하지 않는 CH8 허용 스위치를 LOW로 내리거나 AltHold를 벗어나 수행합니다.
+override하지 않는 CH8 허용 스위치를 LOW로 내려 수행합니다.
 """
 
 import time
@@ -67,7 +67,6 @@ class MavlinkLink:
         s = cfg["safety"]
         rc = m.get("rc_override", {})
         self.require_armed = s["require_armed"]
-        self.required_mode = s.get("require_mode", "ALT_HOLD")
         self.rc_timeout = float(rc.get("input_timeout", 0.5))
         self.neutral_deadband = int(rc.get("neutral_deadband", 50))
         self.neutral_hold = float(rc.get("neutral_hold", 0.5))
@@ -173,7 +172,7 @@ class MavlinkLink:
                 }
                 self._last_rc = time.monotonic()
 
-        if self._mode != self.required_mode or not self._armed:
+        if not self._armed:
             self._override_active = False
             self._neutral_since = None
 
@@ -204,13 +203,10 @@ class MavlinkLink:
         return self._override_active
 
     def ready_to_command(self):
-        """AltHold에서 OBC가 조종기를 대신 입력해도 되는지 반환합니다."""
+        """시동 상태에서 OBC가 조종기를 대신 입력해도 되는지 반환합니다."""
         if self.require_armed and not self._armed:
             self._neutral_since = None
             return False, "WAIT_ARM"
-        if self._mode != self.required_mode:
-            self._neutral_since = None
-            return False, f"NOT_{self.required_mode} (current {self._mode or '?'})"
         if time.monotonic() - self._last_rc > self.rc_timeout:
             self._neutral_since = None
             return False, "RC_INPUT_STALE"
@@ -229,6 +225,14 @@ class MavlinkLink:
         if now - self._neutral_since < self.neutral_hold:
             return False, "WAIT_NEUTRAL"
         return True, "RC_OVERRIDE_READY"
+
+    def ready_to_release(self):
+        """시동·비행 모드와 무관하게 CH8 투하 허용 상태를 반환합니다."""
+        if time.monotonic() - self._last_rc > self.rc_timeout:
+            return False, "RC_INPUT_STALE"
+        if self._rc_values.get(self.enable_channel, 0) < self.enable_pwm_min:
+            return False, "RELEASE_DISABLED"
+        return True, "RELEASE_ENABLED"
 
     def _sticks_neutral(self):
         return all(

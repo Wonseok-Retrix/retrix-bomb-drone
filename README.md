@@ -37,8 +37,9 @@ python3 src/track_and_follow.py
 ```
 
 > `track_and_follow.py`는 별도 실행 모드 없이 MAVLink와 GPIO 출력을 활성화합니다.
-> AltHold가 아니거나 disarmed 상태에서는 RC override를 해제하지만, 지상 점검 시에는
-> 반드시 프로펠러를 분리하세요.
+> disarmed 상태에서는 RC override를 해제하지만 비행 모드는 검사하지 않습니다. 지상 점검 시에는
+> 반드시 프로펠러를 분리하세요. 드로퍼는 armed 상태와 무관하게 CH8이 HIGH이면
+> 영상 조건에 따라 작동할 수 있으므로 평상시 CH8을 LOW로 두세요.
 
 ---
 

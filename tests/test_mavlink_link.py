@@ -28,7 +28,6 @@ from mavlink_link import MavlinkLink
 def make_link():
     link = MavlinkLink.__new__(MavlinkLink)
     link.require_armed = True
-    link.required_mode = "ALT_HOLD"
     link.rc_timeout = 0.5
     link.neutral_deadband = 50
     link.neutral_hold = 0.5
@@ -79,6 +78,14 @@ class ReadyToCommandTests(unittest.TestCase):
 
         self.assertEqual(link.ready_to_command(), (False, "PILOT_INPUT"))
 
+    @patch("mavlink_link.time.monotonic", return_value=10.5)
+    def test_flight_mode_does_not_block_override(self, _):
+        link = make_link()
+        link._mode = "STABILIZE"
+        link._neutral_since = 10.0
+
+        self.assertEqual(link.ready_to_command(), (True, "RC_OVERRIDE_READY"))
+
     @patch("mavlink_link.time.monotonic", return_value=10.0)
     def test_active_override_does_not_treat_its_own_pwm_as_pilot_input(self, _):
         link = make_link()
@@ -94,6 +101,29 @@ class ReadyToCommandTests(unittest.TestCase):
         link._rc_values[8] = 1100
 
         self.assertEqual(link.ready_to_command(), (False, "RC_OVERRIDE_DISABLED"))
+
+
+class ReadyToReleaseTests(unittest.TestCase):
+    @patch("mavlink_link.time.monotonic", return_value=10.0)
+    def test_ch8_enables_release_while_disarmed_and_outside_althold(self, _):
+        link = make_link()
+        link._armed = False
+        link._mode = "STABILIZE"
+
+        self.assertEqual(link.ready_to_release(), (True, "RELEASE_ENABLED"))
+
+    @patch("mavlink_link.time.monotonic", return_value=10.0)
+    def test_ch8_low_disables_release(self, _):
+        link = make_link()
+        link._rc_values[8] = 1100
+
+        self.assertEqual(link.ready_to_release(), (False, "RELEASE_DISABLED"))
+
+    @patch("mavlink_link.time.monotonic", return_value=11.0)
+    def test_stale_rc_input_disables_release(self, _):
+        link = make_link()
+
+        self.assertEqual(link.ready_to_release(), (False, "RC_INPUT_STALE"))
 
 
 class PwmConversionTests(unittest.TestCase):

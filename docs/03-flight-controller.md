@@ -90,20 +90,21 @@ Mission Planner의 Full Parameter Tree에서 다음을 설정합니다.
 사용하는 보조 채널이 CH8이 아니면 `RCx_OPTION=46`과 `config.yaml`의
 `enable_channel`을 같은 채널로 바꿉니다.
 
-프로그램은 안전상 스스로 시동하거나 AltHold로 전환하지 않습니다.
+프로그램은 스스로 시동하거나 비행 모드를 바꾸지 않으며 현재 모드도 검사하지 않습니다.
 
-1. 조종자가 직접 시동하고 AltHold로 이륙합니다.
+1. 조종자가 직접 AltHold를 선택하고 시동·이륙합니다.
 2. `track_and_follow.py`를 실행합니다.
 3. 네 개의 주 스틱을 중립에 두고 CH8 override 허용 스위치를 HIGH로 올립니다.
 4. 이상 동작 시 CH8을 LOW로 내려 즉시 제어권을 회수합니다.
 
-AltHold가 아니거나 CH8이 LOW이면 프로그램은 override를 해제합니다. 목표가 없으면
+CH8이 LOW이거나 disarmed 상태이면 프로그램은 override를 해제합니다. 목표가 없으면
 중립 PWM을 보냅니다. override 중에는 RC1~RC4 실제 스틱 입력이 무시됩니다.
+OBC가 비행 모드를 검증하지 않으므로 AltHold 선택은 전적으로 조종자가 확인해야 합니다.
 
 > [!IMPORTANT]
 > ArduCopter 4.7에서는 주 스틱을 움직여도 override가 자동 해제되지 않습니다.
-> 프로펠러를 제거한 상태에서 CH8 LOW와 AltHold 이탈 시 RC1~RC4가 실제 조종기
-> 입력으로 즉시 돌아오는지 먼저 검증하세요.
+> 프로펠러를 제거한 상태에서 CH8 LOW 시 RC1~RC4가 실제 조종기 입력으로 즉시
+> 돌아오는지 먼저 검증하세요.
 
 ---
 
@@ -147,7 +148,6 @@ mode=LOITER     armed=False batt=12.4V gps fix=3 sats=11 yaw=+87deg
 | 하트비트 미수신 | TX/RX 교차, 공통 GND, 양쪽 baud 확인 |
 | 하트비트 미수신 | 연결 UART에 대응하는 `SERIALx_PROTOCOL=2`인지 확인 |
 | `UNSUPPORTED_AUTOPILOT` | MicoAir743v2에 ArduCopter 펌웨어가 설치됐는지 확인 |
-| `NOT_ALT_HOLD` 지속 | 조종기 비행 모드 스위치와 현재 AltHold 모드 확인 |
 | `RC_OVERRIDE_DISABLED` 지속 | `RC8_OPTION=46` 확인 후 CH8 스위치를 HIGH로 전환 |
 | 배터리·GPS·ATTITUDE 누락 | `SERIALx` stream rate와 메시지 요청 응답 확인 |
 | `Permission denied` | `sudo usermod -aG dialout pi` 후 재로그인 |

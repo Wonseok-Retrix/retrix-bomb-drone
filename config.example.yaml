@@ -136,6 +136,9 @@ dropper:
 
   # ---- 언제 놓을지 (src/release.py) ----
   release:
+    # 시동 및 비행 모드와 무관하게 CH8 override 허용 스위치가 HIGH일 때
+    # 아래 영상 조건을 만족하면 투하합니다. 지상에서는 CH8을 LOW로 두세요.
+
     # 과녁 중심이 화면 중앙에서 이만큼 안쪽이어야 함 (0.10 = 화면 절반의 10%)
     # 작을수록 정확하지만 조건을 못 맞춰 계속 못 놓을 수 있습니다
     align: 0.10
@@ -225,8 +228,5 @@ mavlink:
     yaw_sign: 1
 
 safety:
-  # 이 모드에서만 RC override를 허용. 다른 모드에서는 즉시 override를 해제합니다.
-  require_mode: ALT_HOLD
-
   # 시동(arm)이 걸려있을 때만 명령을 보냄
   require_armed: true

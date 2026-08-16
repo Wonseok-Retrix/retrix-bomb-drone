@@ -1,12 +1,13 @@
 """언제 물건을 떨어뜨릴지 판단하는 파일.
 
-과녁 위에 "충분히 잘" 올라갔는지만 봅니다. 조건은 다섯 개입니다.
+CH8 투하 허용과 과녁 정렬 상태를 봅니다. 시동·비행 모드는 요구하지 않습니다.
 
-    1. 과녁이 보인다
-    2. 과녁 정보가 방금 것이다            (나이가 max_age 보다 어리다)
-    3. 과녁이 화면 중앙에 있다            (align  보다 오차가 작다)
-    4. 충분히 낮게 내려왔다               (박스 크기가 size_min 보다 크다)
-    5. 위 상태가 hold_seconds 동안 유지됐다
+    1. CH8 투하 허용 스위치가 HIGH다
+    2. 과녁이 보인다
+    3. 과녁 정보가 방금 것이다            (나이가 max_age 보다 어리다)
+    4. 과녁이 화면 중앙에 있다            (align 보다 오차가 작다)
+    5. 충분히 낮게 내려왔다               (박스 크기가 size_min 보다 크다)
+    6. 위 상태가 hold_seconds 동안 유지됐다
 
 하나라도 깨지면 타이머는 0으로 돌아갑니다. 지나가면서 우연히 중앙에 걸린 순간에
 떨어뜨리지 않기 위해서입니다.
@@ -45,9 +46,9 @@ class ReleaseJudge:
         self._good_since = None
         self.reason = "WAITING"
 
-    def update(self, target, ready):
+    def update(self, target, release_enabled):
         """조건을 다 만족하면 딱 한 번 True. 매 루프 호출하세요."""
-        ok, self.reason = self._check(target, ready)
+        ok, self.reason = self._check(target, release_enabled)
 
         if not ok:
             self._good_since = None
@@ -66,9 +67,9 @@ class ReleaseJudge:
         self._good_since = None
         return True
 
-    def _check(self, target, ready):
-        if not ready:
-            return False, "CONTROL_NOT_READY"    # AltHold override 또는 시동 준비 안 됨
+    def _check(self, target, release_enabled):
+        if not release_enabled:
+            return False, "RELEASE_DISABLED"
         if target is None:
             return False, "NO_TARGET"
 

@@ -84,7 +84,7 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 5. **수동 제어권 확보**: 이상 동작 시 override 허용 스위치(CH8)를 LOW로 내립니다.
 
 > [!IMPORTANT]
-> **CH8 override 허용 스위치가 최우선 비상 복귀 수단입니다.** AltHold 이탈도 override를 해제합니다. RC1~RC4 스틱만 움직여서는 해제되지 않으며, OBC 통신이 끊기면 `RC_OVERRIDE_TIME` 뒤 실제 수신기 입력으로 돌아옵니다.
+> **CH8 override 허용 스위치가 최우선 비상 복귀 수단입니다.** 비행 모드를 바꿔도 override는 유지됩니다. RC1~RC4 스틱만 움직여서는 해제되지 않으며, OBC 통신이 끊기면 `RC_OVERRIDE_TIME` 뒤 실제 수신기 입력으로 돌아옵니다.
 
 ---
 

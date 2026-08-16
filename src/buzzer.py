@@ -10,6 +10,8 @@ class StatusBuzzer:
     PIN = 23  # BCM GPIO23, physical pin 16
     BEEP_SECONDS = 0.06
     CYCLE_INTERVAL = 0.13
+    RELEASE_BEEPS_PER_SECOND = 6
+    RELEASE_INTERVAL = 1.0 / RELEASE_BEEPS_PER_SECOND
     STARTUP_BEEPS = 3
 
     def __init__(self):
@@ -18,6 +20,7 @@ class StatusBuzzer:
         self._condition = threading.Condition()
         self._generation = 0
         self._pattern = ()
+        self._repeat_interval = None
         self._stopped = False
         self._thread = None
 
@@ -39,22 +42,26 @@ class StatusBuzzer:
                 self._output = None
 
     def notify_cycle(self, tracking, release_waiting=False):
-        """Announce one new camera cycle, replacing any unfinished status sound."""
+        """Update status, keeping the release-ready sound independent of frames."""
         if not self.enabled:
             return
 
-        if not tracking:
+        repeat_interval = None
+        if release_waiting:
+            pattern = ((self.BEEP_SECONDS, 0.0),)
+            repeat_interval = self.RELEASE_INTERVAL
+        elif not tracking:
             pattern = ()
         else:
-            count = 3 if release_waiting else 1
-            gap = max(0.0, self.CYCLE_INTERVAL - self.BEEP_SECONDS)
-            pattern = tuple(
-                (self.BEEP_SECONDS, gap if i < count - 1 else 0.0)
-                for i in range(count)
-            )
+            pattern = ((self.BEEP_SECONDS, 0.0),)
 
         with self._condition:
+            # Camera frames may arrive faster than the release-ready cadence.
+            # Do not restart an already-running cadence for every frame.
+            if repeat_interval is not None and self._repeat_interval is not None:
+                return
             self._pattern = pattern
+            self._repeat_interval = repeat_interval
             self._generation += 1
             self._condition.notify_all()
 
@@ -75,8 +82,12 @@ class StatusBuzzer:
                 if self._stopped:
                     break
                 pattern = self._pattern
+                repeat_interval = self._repeat_interval
                 handled = self._generation
-            self._play(pattern, generation=handled)
+            if repeat_interval is None:
+                self._play(pattern, generation=handled)
+            else:
+                self._play_repeating(repeat_interval, handled)
 
         self._off()
 
@@ -91,6 +102,35 @@ class StatusBuzzer:
             self._off()
             if not self._wait(gap, generation):
                 return
+
+    def _play_repeating(self, interval, generation):
+        """Repeat from fixed deadlines so processing time cannot shift the cadence."""
+        next_start = time.monotonic()
+        while True:
+            if not self._wait_until(next_start, generation):
+                return
+            self._output.on()
+            if not self._wait(self.BEEP_SECONDS, generation):
+                self._off()
+                return
+            self._off()
+
+            next_start += interval
+            now = time.monotonic()
+            if next_start < now:
+                missed = int((now - next_start) / interval) + 1
+                next_start += missed * interval
+
+    def _wait_until(self, deadline, generation):
+        with self._condition:
+            while not self._stopped:
+                if self._generation != generation:
+                    return False
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return True
+                self._condition.wait(remaining)
+        return False
 
     def _wait(self, seconds, generation):
         deadline = time.monotonic() + seconds

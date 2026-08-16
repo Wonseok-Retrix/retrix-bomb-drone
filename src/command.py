@@ -11,9 +11,9 @@ from dataclasses import dataclass
 class Command:
     """기체 기준 제어축. 아무것도 안 넣으면 중립 스틱 명령입니다."""
 
-    forward: float = 0.0   # 명령 단위, + 전진
-    right: float = 0.0     # 명령 단위, + 오른쪽
-    down: float = 0.0      # 명령 단위, + 하강
+    forward: float = 0.0   # 정규화 스틱 비율(-1~1), + 전진
+    right: float = 0.0     # 정규화 스틱 비율(-1~1), + 오른쪽
+    down: float = 0.0      # 정규화 스틱 비율(-1~1), + 하강
     yaw_rate: float = 0.0  # deg/s, + 시계방향
 
     @property

@@ -12,10 +12,10 @@
 
 읽는 설정은 config.yaml 의 control 블록 뿐입니다.
 
-P 제어는 "오차에 비례해서 반응한다"가 전부입니다.
-게인은 따로 두지 않고 max_* 값이 제어 강도와 OBC 명령 상한을 겸합니다.
+P 제어는 "오차에 비례해서 반응한다"가 전부입니다. gain=1이면 데드밴드 바깥의
+최대 오차에서 해당 RC 스틱 끝값까지 사용합니다.
 
-    명령 = 오차 x max_*           (단, max_* 를 넘지 않음)
+    정규화 명령 = 정규화 오차 x gain      (최종 범위 -1 ~ +1)
 
 
 ★ 느린 카메라(1~2 fps)를 위한 감쇠
@@ -39,10 +39,23 @@ from command import Command
 
 
 def _deadband(value, band):
-    """작은 오차는 0으로 죽이고, 그 바깥은 연속적으로 이어붙입니다."""
+    """데드밴드 바깥을 0~1로 다시 늘려 최대 오차가 정확히 1이 되게 합니다."""
     if abs(value) <= band:
         return 0.0
-    return value - band if value > 0 else value + band
+    magnitude = (abs(value) - band) / (1.0 - band)
+    return _clamp(magnitude, 1.0) * (1.0 if value > 0 else -1.0)
+
+
+def _size_error(size, target_size, band):
+    """목표 크기 오차를 상승/하강 방향별 최대 가능 오차로 정규화합니다."""
+    raw = target_size - size
+    if abs(raw) <= band:
+        return 0.0
+    limit = target_size if raw > 0 else 1.0 - target_size
+    if limit <= band:
+        return 0.0
+    magnitude = (abs(raw) - band) / (limit - band)
+    return _clamp(magnitude, 1.0) * (1.0 if raw > 0 else -1.0)
 
 
 def _clamp(value, limit):
@@ -51,9 +64,10 @@ def _clamp(value, limit):
 
 class Controller:
     def __init__(self, c):
-        self.max_lateral = c["max_lateral"]
-        self.max_forward = c["max_forward"]
-        self.max_vertical = c["max_vertical"]
+        # 구 config.yaml도 실행 가능하도록 새 키가 없으면 보수적인 기본값을 씁니다.
+        self.lateral_gain = c.get("lateral_gain", 0.25)
+        self.forward_gain = c.get("forward_gain", 0.25)
+        self.vertical_gain = c.get("vertical_gain", 0.10)
 
         self.deadband = c["deadband"]
         self.target_size = c["target_size"]
@@ -86,15 +100,15 @@ class Controller:
 
         # 1) 좌우: 목표가 오른쪽에 있으면 오른쪽으로 이동 (기수는 그대로)
         err_x = _deadband(target.offset_x, self.deadband)
-        right = _clamp(err_x * self.max_lateral, self.max_lateral)
+        right = _clamp(err_x * self.lateral_gain, 1.0)
 
         # 2) 상하: 화면 위쪽(-)이 기수 앞쪽이므로 부호를 뒤집는다
         err_y = _deadband(target.offset_y, self.deadband)
-        forward = _clamp(-err_y * self.max_forward, self.max_forward)
+        forward = _clamp(-err_y * self.forward_gain, 1.0)
 
         # 3) 크기: 박스가 목표 크기보다 작으면(= 아직 높으면) 하강
-        err_size = _deadband(self.target_size - target.size, self.size_deadband)
-        down = _clamp(err_size * self.max_vertical, self.max_vertical)
+        err_size = _size_error(target.size, self.target_size, self.size_deadband)
+        down = _clamp(err_size * self.vertical_gain, 1.0)
 
         # 4) 정보가 오래될수록 힘을 뺍니다 (위 주석 참고)
         return Command(

@@ -74,7 +74,7 @@ python3 tools/check_camera.py
 
 > [!NOTE]
 > - 현재 AI 카메라 하드웨어는 **실측 1~2 fps**로 동작합니다. 로그 좌측의 실측 fps가 `config.yaml` 설정값(기본 2 fps) 부근으로 출력되면 정상입니다.
-> - 제어기(`controller.py`)는 1~2 fps 피드백 지연 환경을 전제로 감쇠 알고리즘(`stale_hold`/`stale_stop`)과 낮은 `max_*` 속도를 적용하여 오버슈트를 줄이도록 설계되어 있습니다.
+> - 제어기(`controller.py`)는 1~2 fps 피드백 지연 환경을 전제로 감쇠 알고리즘(`stale_hold`/`stale_stop`)과 낮은 `*_gain`을 적용하여 오버슈트를 줄이도록 설계되어 있습니다.
 
 ### 카메라 문제 해결 Guide
 

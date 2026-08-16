@@ -72,12 +72,12 @@ ls -l /dev/serial0        # ttyAMA0을 가리키는지 확인
 
 이 프로젝트는 `RC_CHANNELS_OVERRIDE`를 10Hz로 전송해 AltHold의 roll, pitch,
 throttle, yaw 입력을 대신합니다. GPS 위치 명령은 사용하지 않습니다. OBC 명령은
-`control.max_*`의 명령을 축별 `*_pwm_per_unit` 게인으로 PWM 편차로 바꾸고,
-`mavlink.rc_override.pwm_span`에서 최종 편차를 제한합니다.
+화면 오차를 `control.*_gain`으로 정규화된 스틱 비율로 바꿉니다. gain이 `1`이면
+최대 오차에서 `pwm_min` 또는 `pwm_max`까지 스틱을 끝까지 사용합니다.
 
 throttle도 override하므로 목표가 작으면 하강하고 목표가 너무 크면 상승합니다.
 목표가 없거나 크기 오차가 데드밴드 안이면 중립 throttle을 보내 AltHold가 현재
-고도를 유지합니다. `control.max_vertical: 0`이면 자동 상승·하강이 꺼집니다.
+고도를 유지합니다. `control.vertical_gain: 0`이면 자동 상승·하강이 꺼집니다.
 
 Mission Planner의 Full Parameter Tree에서 다음을 설정합니다.
 

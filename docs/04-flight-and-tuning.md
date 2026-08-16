@@ -12,7 +12,7 @@
 
 ### 제어 구조 (`src/controller.py`)
 
-하방 카메라 영상의 위치 오차를 P 제어(비례 제어)를 통해 수평/수직 RC 명령으로 변환합니다. `max_lateral`, `max_forward`, `max_vertical`이 비례 제어 강도와 OBC 명령 상한을 겸하고, 축별 `*_pwm_per_unit`가 이를 PWM 편차로 바꿉니다. AltHold의 실제 속도는 기체 튜닝과 환경에 따라 달라집니다.
+하방 카메라 영상의 위치 오차를 P 제어(비례 제어)를 통해 수평/수직 RC 명령으로 변환합니다. `lateral_gain`, `forward_gain`, `vertical_gain`은 최대 오차에서 사용할 스틱 비율입니다. gain이 `1`이면 스틱 끝값, `0.25`면 전체 중심-끝 구간의 25%를 사용합니다. AltHold의 실제 속도는 기체 튜닝과 환경에 따라 달라집니다.
 
 ```
    목표가 화면 오른쪽에 위치   →   오른쪽으로 이동 (right > 0)
@@ -60,7 +60,7 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 | 1 | `camera.fps` | 실측값에 맞춰 설정 |
 | 2 | `control.stale_hold` / `stale_stop` | 프레임 간격에 맞춰 축소 (예: 10 fps → `0.15` / `0.4`) |
 | 3 | `tracking.lost_timeout` | `1.0` 수준으로 축소 |
-| 4 | `control.max_lateral` / `max_forward` | 단계적 상향 |
+| 4 | `control.lateral_gain` / `forward_gain` | 단계적 상향 |
 
 ---
 
@@ -93,9 +93,9 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 | 설정 항목                   | 현재 설정값      | 1~2 fps 기준 튜닝 이유              |
 | :---------------------- | :---------- | :---------------------------- |
 | `camera.fps`            | `2`         | AI 카메라 실측 1~2 fps 동작 반영       |
-| `control.max_lateral`   | `0.4` | 좌우 P 제어 강도 및 OBC 명령 상한       |
-| `control.max_forward`   | `0.4` | 전후 P 제어 강도 및 OBC 명령 상한       |
-| `control.max_vertical`  | `0.25` | 상하 P 제어 강도 및 OBC 명령 상한       |
+| `control.lateral_gain`  | `0.25` | 최대 좌우 오차에서 스틱 25% 사용        |
+| `control.forward_gain`  | `0.25` | 최대 전후 오차에서 스틱 25% 사용        |
+| `control.vertical_gain` | `0.10` | 최대 크기 오차에서 throttle 10% 사용    |
 | `control.stale_stop`    | `1.2` (초)   | 프레임 간격 사이 감속 정지 유도            |
 | `tracking.smoothing`    | `0.8`       | 프레임이 귀하므로 평활화 지연 최소화          |
 | `tracking.lost_timeout` | `3.0` (초)   | 1~2프레임 순간 미검출 시 추적 포기 방지      |
@@ -112,12 +112,12 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 | 목표를 자주 놓침           | 검출 임계값 과다     | `detection.threshold` ↓ (0.50 → 0.35)                |
 | 엉뚱한 물체를 목표로 잡음      | 검출 임계값 협소     | `detection.threshold` ↑ (0.50 → 0.65)                |
 | 물체가 여러 개 인식됨        | 선택 전략 미흡      | `tracking.select: nearest` 설정                        |
-| 목표 상공에서 원을 그리며 선회   | 수평 속도 과다      | `max_lateral`, `max_forward` ↓ (0.4 → 0.3)           |
+| 목표 상공에서 원을 그리며 선회   | 수평 반응 과다      | `lateral_gain`, `forward_gain` ↓ (0.25 → 0.20)       |
 | 이동 속도가 지나치게 느림      | 감쇠 제어 과다      | `stale_stop` ↑ (1.2 → 1.6)                           |
 | 중심 위치에서 잘게 떨림       | 데드밴드 협소       | `deadband` ↑ (0.08 → 0.12)                           |
 | 좌우로 가야 하는데 앞뒤로 이동   | 카메라 90° 오장착   | 카메라 상단이 기수를 향하는지 재확인 (조치는 배선이 아닌 장착 방향)              |
-| 하강 중 멈췄다 다시 상승      | 수직 속도 과다      | `max_vertical` ↓, `size_deadband` ↑                  |
-| 목표가 화면 밖으로 자주 이탈    | 고도 부족 또는 과속   | 비행 고도 상승, `max_lateral` ↓                            |
+| 하강 중 멈췄다 다시 상승      | 수직 반응 과다      | `vertical_gain` ↓, `size_deadband` ↑                 |
+| 목표가 화면 밖으로 자주 이탈    | 고도 부족 또는 과속   | 비행 고도 상승, `lateral_gain` ↓                     |
 | 목표에 너무 낮게 내려옴       | 목표 크기 과다      | `target_size` ↓ (0.35 → 0.25)                        |
 | 목표 일시 분실 시 급정지      | 분실 판정 시간 부족   | `tracking.lost_timeout` ↑ (3.0 → 4.0)                |
 | 정렬이 거의 맞지만 드로퍼가 작동하지 않음 | 투하 허용 오차가 너무 좁음 | `release.align` ↑ (0.10 → 0.15 → 0.20)            |
@@ -128,11 +128,11 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 
 ### 권장 튜닝 순서
 
-1. `max_vertical: 0`으로 두고 고도는 조종자가 수동 유지합니다. `max_lateral`과 `max_forward`를 `0.3`부터 올리며 **목표 상공에 안정적으로 정지 비행하는 성능**부터 맞춥니다.
-2. 수평 추적이 안정되면 `max_vertical`을 `0.15`부터 단계적으로 높여 **자동 고도 강하**를 활성화합니다.
+1. `vertical_gain: 0`으로 두고 고도는 조종자가 수동 유지합니다. `lateral_gain`과 `forward_gain`을 `0.15`부터 올리며 **목표 상공에 안정적으로 정지 비행하는 성능**부터 맞춥니다.
+2. 수평 추적이 안정되면 `vertical_gain`을 `0.05`부터 단계적으로 높여 **자동 고도 강하**를 활성화합니다.
 3. `target_size`를 키우면 최종 접근 고도가 낮아집니다. **한 번에 0.05씩만** 조정하세요.
 
-> 속도를 높이다가 헌팅이 발생하면 직전에 안정적이었던 `max_*` 값으로 되돌립니다.
+> 반응을 높이다가 헌팅이 발생하면 직전에 안정적이었던 `*_gain` 값으로 되돌립니다.
 
 ---
 
@@ -142,7 +142,7 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 2. **안전요원 및 조종자 배치**: 비행 중 항상 수동 전환이 가능한 조종자가 조종기를 쥐고 대기하세요.
 3. **안전거리 유지**: 사람 및 구조물과 20m 이상 안전거리를 확보하세요.
 4. **배터리 관리**: 배터리 잔량 30% 이하 시 테스트를 중단하고 충전하세요.
-5. **초기 한계값 설정**: 최초 비행 시에는 `max_lateral: 0.3`, `max_forward: 0.3`으로 속도 한계를 더 낮추어 테스트하세요.
+5. **초기 게인 설정**: 최초 비행 시에는 `lateral_gain: 0.15`, `forward_gain: 0.15`로 더 낮추어 테스트하세요.
 
 ---
 

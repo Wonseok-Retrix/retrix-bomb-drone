@@ -68,7 +68,6 @@ class MavlinkLink:
         rc = m.get("rc_override", {})
         self.require_armed = s["require_armed"]
         self.rc_timeout = float(rc.get("input_timeout", 0.5))
-        self.pwm_span = int(rc.get("pwm_span", 100))
         self.pwm_min = int(rc.get("pwm_min", 1100))
         self.pwm_max = int(rc.get("pwm_max", 1900))
         self.enable_channel = int(rc.get("enable_channel", 8))
@@ -89,12 +88,8 @@ class MavlinkLink:
             "throttle": int(rc.get("throttle_sign", -1)),
             "yaw": int(rc.get("yaw_sign", 1)),
         }
-        self.pwm_per_unit = {
-            "roll": float(rc.get("roll_pwm_per_unit", 250.0)),
-            "pitch": float(rc.get("pitch_pwm_per_unit", 250.0)),
-            "throttle": float(rc.get("throttle_pwm_per_unit", 400.0)),
-            "yaw": float(rc.get("yaw_pwm_per_unit", 3.0)),
-        }
+        self.max_yaw_rate = float(rc.get("max_yaw_rate", 30.0))
+        self.yaw_gain = float(rc.get("yaw_gain", 0.25))
 
         if len(set(self.channels.values())) != 4:
             raise ValueError("rc_override primary channels must be different")
@@ -221,22 +216,23 @@ class MavlinkLink:
     # ---------- 명령 ----------
 
     def command_to_pwm(self, cmd):
-        """Controller의 축 명령을 보수적인 RC PWM 편차로 변환합니다."""
+        """정규화 명령을 trim에서 RC 끝값 사이의 PWM으로 변환합니다."""
         values = {
             "roll": cmd.right,
             "pitch": cmd.forward,
             "throttle": cmd.down,
-            "yaw": cmd.yaw_rate,
+            "yaw": (
+                0.0
+                if self.max_yaw_rate <= 0.0
+                else cmd.yaw_rate / self.max_yaw_rate * self.yaw_gain
+            ),
         }
         result = {}
         for axis, value in values.items():
-            offset = _clamp(
-                value * self.pwm_per_unit[axis], -self.pwm_span, self.pwm_span
-            )
-            pwm = self.trims[axis] + self.signs[axis] * offset
-            result[self.channels[axis]] = int(
-                round(_clamp(pwm, self.pwm_min, self.pwm_max))
-            )
+            ratio = _clamp(self.signs[axis] * value, -1.0, 1.0)
+            trim = self.trims[axis]
+            travel = self.pwm_max - trim if ratio >= 0.0 else trim - self.pwm_min
+            result[self.channels[axis]] = int(round(trim + ratio * travel))
         return result
 
     def send_override(self, cmd):

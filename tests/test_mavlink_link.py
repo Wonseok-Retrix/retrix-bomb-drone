@@ -29,7 +29,6 @@ def make_link():
     link = MavlinkLink.__new__(MavlinkLink)
     link.require_armed = True
     link.rc_timeout = 0.5
-    link.pwm_span = 100
     link.pwm_min = 1100
     link.pwm_max = 1900
     link.enable_channel = 8
@@ -37,12 +36,8 @@ def make_link():
     link.channels = {"roll": 1, "pitch": 2, "throttle": 3, "yaw": 4}
     link.trims = {axis: 1500 for axis in link.channels}
     link.signs = {"roll": 1, "pitch": -1, "throttle": -1, "yaw": 1}
-    link.pwm_per_unit = {
-        "roll": 250.0,
-        "pitch": 250.0,
-        "throttle": 400.0,
-        "yaw": 10.0 / 3.0,
-    }
+    link.max_yaw_rate = 30.0
+    link.yaw_gain = 0.25
     link._armed = True
     link._mode = "ALT_HOLD"
     link._rc_values = {1: 1500, 2: 1500, 3: 1500, 4: 1500, 8: 1900}
@@ -125,15 +120,15 @@ class PwmConversionTests(unittest.TestCase):
         link = make_link()
 
         pwm = link.command_to_pwm(
-            Command(forward=0.4, right=0.2, down=0.25, yaw_rate=-15)
+            Command(forward=0.25, right=0.125, down=0.25, yaw_rate=-15)
         )
 
         self.assertEqual(pwm, {1: 1550, 2: 1400, 3: 1400, 4: 1450})
 
-    def test_pwm_span_limits_large_command(self):
+    def test_large_command_is_limited_to_stick_endpoint(self):
         link = make_link()
 
-        self.assertEqual(link.command_to_pwm(Command(down=10.0))[3], 1400)
+        self.assertEqual(link.command_to_pwm(Command(down=10.0))[3], 1100)
 
     def test_altitude_commands_map_to_althold_throttle(self):
         link = make_link()
@@ -149,7 +144,7 @@ class PwmConversionTests(unittest.TestCase):
             target_system=1, target_component=1, mav=mav
         )
 
-        link.send_override(Command(right=0.4))
+        link.send_override(Command(right=0.25))
         sent = mav.override_calls[-1][2:]
 
         self.assertEqual(sent[:4], (1600, 1500, 1500, 1500))

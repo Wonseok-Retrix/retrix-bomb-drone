@@ -51,6 +51,7 @@ src/
   tracker.py                  검출 결과 중 단일 목표 선택 및 추적
   command.py                  드론 속도 제어 명령 구조체
   controller.py               하방 카메라 기반 P 제어기 (위치 오차 -> 이동 속도)
+  buzzer.py                   액티브 부저 상태음 (GPIO23)
   release.py                  자동 투하 조건 판단
   dropper.py                  서보 드로퍼 구동 (Pi GPIO 직접 제어)
   mavlink_link.py             pymavlink MAVLink 통신 및 안전 상태 점검

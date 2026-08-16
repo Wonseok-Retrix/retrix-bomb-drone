@@ -29,6 +29,7 @@ import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from buzzer import StatusBuzzer
 from command import Command
 from controller import Controller
 from detector import Detector
@@ -61,6 +62,7 @@ class VisionThread:
         self._target = None
         self._n_det = 0
         self._updated_at = 0.0
+        self._frame_id = 0
         self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True)
 
@@ -80,18 +82,22 @@ class VisionThread:
                 self._target = target
                 self._n_det = len(detections)
                 self._updated_at = time.monotonic()
+                self._frame_id += 1
 
     def latest(self, stall_timeout):
-        """(목표, 검출 개수, 카메라 멈춤 여부) 를 돌려줍니다.
+        """(목표, 검출 개수, 카메라 멈춤 여부, 프레임 번호) 를 돌려줍니다.
 
         목표가 얼마나 오래된 정보인지는 target.age 에 들어있고, 그걸로 명령 세기를
         줄이는 건 제어기가 합니다. 여기서 보는 건 '카메라 자체가 죽었는가' 뿐입니다.
         """
         with self._lock:
-            target, n_det, updated_at = self._target, self._n_det, self._updated_at
+            target = self._target
+            n_det = self._n_det
+            updated_at = self._updated_at
+            frame_id = self._frame_id
         if updated_at == 0.0 or time.monotonic() - updated_at > stall_timeout:
-            return None, n_det, True   # 카메라가 프레임을 아예 못 주고 있음
-        return target, n_det, False
+            return None, n_det, True, frame_id  # 카메라가 프레임을 아예 못 주고 있음
+        return target, n_det, False, frame_id
 
     def stop(self):
         self._running = False
@@ -116,6 +122,7 @@ def main():
     print(f"  Mode         : {'*** LIVE ***' if args.live else 'DRY RUN (no commands sent)'}")
     print("=" * 60)
 
+    buzzer = StatusBuzzer()
     detector = Detector(cfg)
     tracker = Tracker(cfg, detector.frame_size)
     controller = Controller(cfg["control"])
@@ -135,12 +142,13 @@ def main():
     last_log = 0.0
     last_status = 0.0
     was_ready = False
+    last_buzzer_frame = 0
 
     try:
         while True:
             loop_start = time.monotonic()
 
-            target, n_det, stalled = vision.latest(stall_timeout)
+            target, n_det, stalled, frame_id = vision.latest(stall_timeout)
             age = target.age if target is not None else float("inf")
             cmd = controller.compute(target, age)
 
@@ -168,7 +176,15 @@ def main():
                 ready, reason = False, "MAVLINK_DISABLED"
 
             # 과녁 위에 잘 정렬됐으면 투하합니다. 판단은 release.py 가 합니다.
-            if judge.update(target, ready) and dropper.drop():
+            release_now = judge.update(target, ready)
+            if frame_id != last_buzzer_frame:
+                buzzer.notify_cycle(
+                    tracking=target is not None and not stalled,
+                    release_waiting=judge.holding and not dropper.dropped,
+                )
+                last_buzzer_frame = frame_id
+
+            if release_now and dropper.drop():
                 if link is not None:
                     link.statustext("DROP")
             dropper.update()   # 열어둔 시간이 지나면 스스로 닫힙니다
@@ -188,6 +204,7 @@ def main():
         vision.stop()
         if link is not None:
             link.send_stop()
+        buzzer.stop()
         dropper.stop()
         detector.close()
 

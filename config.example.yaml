@@ -188,11 +188,10 @@ mavlink:
     roll_channel: 1
     pitch_channel: 2
     throttle_channel: 3
-    yaw_channel: 4
 
     # 이 채널을 Mission Planner에서 RCx_OPTION=46(RC Override Enable)으로
-    # 지정합니다. HIGH일 때만 OBC 제어를 허용합니다. override 중 RC1~RC4
-    # 스틱은 무시되므로 수동 복귀 시 이 스위치를 반드시 LOW로 내리세요.
+    # 지정합니다. HIGH일 때만 OBC 제어를 허용합니다. override 중 RC1~RC3
+    # 스틱은 무시되고 yaw(RC4)는 조종기로 계속 제어할 수 있습니다.
     enable_channel: 8
     enable_pwm_min: 1800
 
@@ -200,7 +199,6 @@ mavlink:
     roll_trim: 1500
     pitch_trim: 1500
     throttle_trim: 1500
-    yaw_trim: 1500
 
     # FC의 RC_CHANNELS 메시지가 이 시간보다 오래되면 override를 시작하지 않습니다.
     input_timeout: 0.5
@@ -214,9 +212,6 @@ mavlink:
     roll_sign: 1
     pitch_sign: -1
     throttle_sign: -1
-    yaw_sign: 1
-    max_yaw_rate: 30
-    yaw_gain: 0.25
 
 safety:
   # 시동(arm)이 걸려있을 때만 명령을 보냄

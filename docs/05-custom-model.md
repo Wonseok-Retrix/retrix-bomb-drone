@@ -192,7 +192,7 @@ CH8 투하 허용을 끄면 자동으로 드로퍼와 투하 판단 상태를 �
 프로그램 실행 중 투하 조건 판단 로그 예시는 다음과 같습니다:
 
 ```
-[OK] x=+0.03 y=-0.02 size=0.33 conf=0.81 -> fwd=+0.00 right=+0.00 down=+0.02 yaw=+0.0deg/s | RC_OVERRIDE
+[OK] x=+0.03 y=-0.02 size=0.33 conf=0.81 -> roll(RC1)=1500 pitch(RC2)=1500 throttle(RC3)=1492 | RC_OVERRIDE
      드로퍼: 정렬 유지중 0.6/1.0s
 ```
 

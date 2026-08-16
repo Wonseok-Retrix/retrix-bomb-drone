@@ -29,7 +29,6 @@ import yaml
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from buzzer import StatusBuzzer
-from command import Command
 from controller import Controller
 from detector import Detector
 from dropper import Dropper
@@ -156,8 +155,12 @@ def main():
             new_frame = frame_id != last_reported_frame
             age = target.age if target is not None else float("inf")
             cmd = controller.compute(target, age)
+            pwm_status = "pwm=DISABLED"
 
             if link is not None:
+                # 전송 여부와 무관하게 현재 추적 명령의 예상 PWM을 계산해 로그에 표시합니다.
+                pwm_output = link.command_to_pwm(cmd)
+                pwm_status = link.format_pwm(pwm_output)
                 link.poll()
                 ready, reason = link.ready_to_command()
                 release_ready, release_reason = link.ready_to_release()
@@ -167,10 +170,9 @@ def main():
 
                 if ready:
                     # 목표가 없으면 중립 스틱을 계속 보냅니다. override 활성 중에는
-                    # RC1~RC4 실제 입력 대신 OBC가 만든 PWM이 적용됩니다.
-                    link.send_override(cmd)
+                    # RC1~RC3 실제 입력 대신 OBC가 만든 PWM이 적용됩니다.
+                    link.send_override(pwm_output)
                 else:
-                    cmd = Command()
                     link.release_override()
 
                 now = time.monotonic()
@@ -211,12 +213,12 @@ def main():
 
             # 부저와 로그는 동일한 새 카메라 프레임마다 각각 한 번만 처리합니다.
             if new_frame:
-                _log(target, cmd, reason, n_det, stalled, controller)
+                _log(target, pwm_status, reason, n_det, stalled, controller)
                 print(f"     dropper: {judge.reason}"
                       f"{' | RELEASED' if dropper.dropped else ''}")
                 last_reported_frame = frame_id
             elif stalled and not was_stalled:
-                _log(target, cmd, reason, n_det, stalled, controller)
+                _log(target, pwm_status, reason, n_det, stalled, controller)
             was_stalled = stalled
 
             time.sleep(max(0.0, period - (time.monotonic() - loop_start)))
@@ -232,19 +234,18 @@ def main():
         detector.close()
 
 
-def _log(target, cmd, reason, n_det, stalled, controller):
+def _log(target, pwm_status, reason, n_det, stalled, controller):
     if stalled:
-        print(f"[!!] CAMERA STALL (no frames) -> stop command | {reason}")
+        print(f"[!!] CAMERA STALL (no frames) | {pwm_status} | {reason}")
     elif target is None:
-        print(f"[--] NO TARGET ({n_det} detections) | {reason}")
+        print(f"[--] NO TARGET ({n_det} detections) | {pwm_status} | {reason}")
     else:
         age = target.age
         print(
             f"[OK] x={target.offset_x:+.2f} y={target.offset_y:+.2f} "
             f"size={target.size:.2f} conf={target.conf:.2f} "
             f"age={age:.2f}s x{controller.freshness(age):.2f} "
-            f"-> fwd={cmd.forward:+.2f} right={cmd.right:+.2f} down={cmd.down:+.2f} "
-            f"yaw={cmd.yaw_rate:+.1f}deg/s | {reason}"
+            f"-> {pwm_status} | {reason}"
         )
 
 

@@ -71,7 +71,7 @@ ls -l /dev/serial0        # ttyAMA0을 가리키는지 확인
 ## 4. AltHold RC override 설정
 
 이 프로젝트는 `RC_CHANNELS_OVERRIDE`를 10Hz로 전송해 AltHold의 roll, pitch,
-throttle, yaw 입력을 대신합니다. GPS 위치 명령은 사용하지 않습니다. OBC 명령은
+throttle 입력을 대신합니다. yaw는 override하지 않아 조종기로 계속 제어할 수 있습니다. GPS 위치 명령은 사용하지 않습니다. OBC 명령은
 화면 오차를 `control.*_gain`으로 정규화된 스틱 비율로 바꿉니다. gain이 `1`이면
 최대 오차에서 `pwm_min` 또는 `pwm_max`까지 스틱을 끝까지 사용합니다.
 
@@ -98,13 +98,13 @@ Mission Planner의 Full Parameter Tree에서 다음을 설정합니다.
 4. 이상 동작 시 CH8을 LOW로 내려 즉시 제어권을 회수합니다.
 
 CH8이 LOW이거나 disarmed 상태이면 프로그램은 override를 해제합니다. 목표가 없으면
-중립 PWM을 보냅니다. override 중에는 RC1~RC4 실제 스틱 입력이 무시됩니다.
+중립 PWM을 보냅니다. override 중에는 RC1~RC3 실제 스틱 입력이 무시됩니다.
 OBC가 비행 모드와 시작 전 스틱 위치를 검증하지 않으므로 AltHold 선택과 CH8 조작은
 전적으로 조종자가 확인해야 합니다.
 
 > [!IMPORTANT]
 > ArduCopter 4.7에서는 주 스틱을 움직여도 override가 자동 해제되지 않습니다.
-> 프로펠러를 제거한 상태에서 CH8 LOW 시 RC1~RC4가 실제 조종기 입력으로 즉시
+> 프로펠러를 제거한 상태에서 CH8 LOW 시 RC1~RC3이 실제 조종기 입력으로 즉시
 > 돌아오는지 먼저 검증하세요.
 
 ---

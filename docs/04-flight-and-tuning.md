@@ -46,8 +46,11 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 감쇠 상태는 실행 로그의 `age`(정보의 나이)와 `x`(적용된 감쇠 비율)로 확인합니다.
 
 ```
-[OK] x=+0.42 y=-0.11 size=0.21 conf=0.78 age=0.35s x0.94 -> fwd=+0.05 right=+0.16 down=+0.03
+[OK] x=+0.42 y=-0.11 size=0.21 conf=0.78 age=0.35s x0.94 -> roll(RC1)=1560 pitch(RC2)=1480 throttle(RC3)=1488 | RC_OVERRIDE
 ```
+
+표시되는 PWM은 현재 추적 오차로 계산한 예상 출력입니다. 실제 전송 여부는 마지막의
+`RC_OVERRIDE`, `WAIT_ARM`, `RC_OVERRIDE_DISABLED` 같은 상태로 확인합니다.
 
 `age`가 0에서 점점 커지다가 `x0.00`에 도달한 뒤 새 프레임이 들어와 다시 0으로 떨어지는 패턴이 반복되면 정상입니다. 카메라가 1~2 fps로 동작하고 있다는 뜻입니다.
 
@@ -80,11 +83,11 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 1. **안전거리 확보**: 장애물이 없는 넓은 야외에서 조종자 및 관람자와 20m 이상 안전거리를 확보합니다.
 2. **이륙 및 수동 비행**: 조종기로 **AltHold** 모드에서 시동을 걸어 고도 5~8m로 안전하게 이륙시킨 후 기체 안정성을 확인합니다.
 3. **스크립트 실행**: SSH 터미널에서 `python3 src/track_and_follow.py`를 실행합니다.
-4. **OBC 제어 허용**: RC override 허용 스위치(CH8)를 HIGH로 올립니다. 시작 전 RC1~RC4 위치는 검사하지 않습니다.
+4. **OBC 제어 허용**: RC override 허용 스위치(CH8)를 HIGH로 올립니다. 시작 전 RC1~RC3 위치는 검사하지 않습니다.
 5. **수동 제어권 확보**: 이상 동작 시 override 허용 스위치(CH8)를 LOW로 내립니다.
 
 > [!IMPORTANT]
-> **CH8 override 허용 스위치가 최우선 비상 복귀 수단입니다.** 비행 모드를 바꿔도 override는 유지됩니다. RC1~RC4 스틱만 움직여서는 해제되지 않으며, OBC 통신이 끊기면 `RC_OVERRIDE_TIME` 뒤 실제 수신기 입력으로 돌아옵니다.
+> **CH8 override 허용 스위치가 최우선 비상 복귀 수단입니다.** 비행 모드를 바꿔도 override는 유지됩니다. RC1~RC3 스틱만 움직여서는 해제되지 않으며, yaw(RC4)는 항상 조종할 수 있습니다. OBC 통신이 끊기면 `RC_OVERRIDE_TIME` 뒤 실제 수신기 입력으로 돌아옵니다.
 
 ---
 

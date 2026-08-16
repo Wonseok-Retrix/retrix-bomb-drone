@@ -33,11 +33,9 @@ def make_link():
     link.pwm_max = 1900
     link.enable_channel = 8
     link.enable_pwm_min = 1800
-    link.channels = {"roll": 1, "pitch": 2, "throttle": 3, "yaw": 4}
+    link.channels = {"roll": 1, "pitch": 2, "throttle": 3}
     link.trims = {axis: 1500 for axis in link.channels}
-    link.signs = {"roll": 1, "pitch": -1, "throttle": -1, "yaw": 1}
-    link.max_yaw_rate = 30.0
-    link.yaw_gain = 0.25
+    link.signs = {"roll": 1, "pitch": -1, "throttle": -1}
     link._armed = True
     link._mode = "ALT_HOLD"
     link._rc_values = {1: 1500, 2: 1500, 3: 1500, 4: 1500, 8: 1900}
@@ -120,10 +118,10 @@ class PwmConversionTests(unittest.TestCase):
         link = make_link()
 
         pwm = link.command_to_pwm(
-            Command(forward=0.25, right=0.125, down=0.25, yaw_rate=-15)
+            Command(forward=0.25, right=0.125, down=0.25)
         )
 
-        self.assertEqual(pwm, {1: 1550, 2: 1400, 3: 1400, 4: 1450})
+        self.assertEqual(pwm, {1: 1550, 2: 1400, 3: 1400})
 
     def test_large_command_is_limited_to_stick_endpoint(self):
         link = make_link()
@@ -144,11 +142,23 @@ class PwmConversionTests(unittest.TestCase):
             target_system=1, target_component=1, mav=mav
         )
 
-        link.send_override(Command(right=0.25))
+        expected = link.command_to_pwm(Command(right=0.25))
+        pwm_output = link.send_override(expected)
         sent = mav.override_calls[-1][2:]
 
-        self.assertEqual(sent[:4], (1600, 1500, 1500, 1500))
+        self.assertEqual(pwm_output, {1: 1600, 2: 1500, 3: 1500})
+        self.assertEqual(sent[:4], (1600, 1500, 1500, 0xFFFF))
         self.assertEqual(sent[7], 0xFFFF)
+
+    def test_formats_pwm_with_axis_and_channel_names(self):
+        link = make_link()
+
+        text = link.format_pwm({1: 1600, 2: 1400, 3: 1500})
+
+        self.assertEqual(
+            text,
+            "roll(RC1)=1600 pitch(RC2)=1400 throttle(RC3)=1500",
+        )
 
     def test_release_only_releases_primary_channels(self):
         link = make_link()
@@ -160,7 +170,7 @@ class PwmConversionTests(unittest.TestCase):
         link.release_override()
         sent = mav.override_calls[-1][2:]
 
-        self.assertEqual(sent[:4], (0, 0, 0, 0))
+        self.assertEqual(sent[:4], (0, 0, 0, 0xFFFF))
         self.assertTrue(all(value == 0xFFFF for value in sent[4:]))
 
 

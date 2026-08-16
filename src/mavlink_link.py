@@ -1,10 +1,11 @@
 """pymavlink로 ArduCopter와 통신하고 AltHold RC override를 관리합니다.
 
 프로그램은 스스로 시동하거나 비행 모드를 바꾸지 않습니다. 시동 상태에서 CH8을
-HIGH로 올리면 OBC가 RC1~RC4를 즉시 대신 입력합니다. 시동이 풀리거나 CH8을
+HIGH로 올리면 OBC가 RC1~RC3을 즉시 대신 입력합니다. 시동이 풀리거나 CH8을
 LOW로 내리면 override를 해제합니다.
 
-override 활성 중에는 RC1~RC4 실제 스틱 입력을 사용하지 않습니다. 제어권 회수는
+override 활성 중에는 RC1~RC3 실제 스틱 입력을 사용하지 않습니다. yaw(RC4)는
+계속 조종기 입력을 사용합니다. 제어권 회수는
 override하지 않는 CH8 허용 스위치를 LOW로 내려 수행합니다.
 """
 
@@ -77,7 +78,6 @@ class MavlinkLink:
             "roll": int(rc.get("roll_channel", 1)),
             "pitch": int(rc.get("pitch_channel", 2)),
             "throttle": int(rc.get("throttle_channel", 3)),
-            "yaw": int(rc.get("yaw_channel", 4)),
         }
         self.trims = {
             axis: int(rc.get(f"{axis}_trim", 1500)) for axis in self.channels
@@ -86,12 +86,9 @@ class MavlinkLink:
             "roll": int(rc.get("roll_sign", 1)),
             "pitch": int(rc.get("pitch_sign", -1)),
             "throttle": int(rc.get("throttle_sign", -1)),
-            "yaw": int(rc.get("yaw_sign", 1)),
         }
-        self.max_yaw_rate = float(rc.get("max_yaw_rate", 30.0))
-        self.yaw_gain = float(rc.get("yaw_gain", 0.25))
 
-        if len(set(self.channels.values())) != 4:
+        if len(set(self.channels.values())) != 3:
             raise ValueError("rc_override primary channels must be different")
         if any(channel < 1 or channel > 8 for channel in self.channels.values()):
             raise ValueError("rc_override primary channels must be in RC1..RC8")
@@ -221,11 +218,6 @@ class MavlinkLink:
             "roll": cmd.right,
             "pitch": cmd.forward,
             "throttle": cmd.down,
-            "yaw": (
-                0.0
-                if self.max_yaw_rate <= 0.0
-                else cmd.yaw_rate / self.max_yaw_rate * self.yaw_gain
-            ),
         }
         result = {}
         for axis, value in values.items():
@@ -235,10 +227,10 @@ class MavlinkLink:
             result[self.channels[axis]] = int(round(trim + ratio * travel))
         return result
 
-    def send_override(self, cmd):
-        """RC1~RC8 중 설정된 주 조종 채널만 override합니다."""
+    def send_override(self, pwm_output):
+        """미리 계산한 PWM으로 설정된 주 조종 채널만 override합니다."""
         channels = [RC_IGNORE] * 18
-        for channel, pwm in self.command_to_pwm(cmd).items():
+        for channel, pwm in pwm_output.items():
             channels[channel - 1] = pwm
         self.master.mav.rc_channels_override_send(
             self.master.target_system,
@@ -246,6 +238,14 @@ class MavlinkLink:
             *channels,
         )
         self._override_active = True
+        return pwm_output
+
+    def format_pwm(self, pwm_output):
+        """로그용 축 이름, RC 채널, PWM 문자열을 만듭니다."""
+        return " ".join(
+            f"{axis}(RC{channel})={pwm_output[channel]}"
+            for axis, channel in self.channels.items()
+        )
 
     def release_override(self):
         """OBC가 잡은 주 조종 채널을 실제 수신기 입력으로 되돌립니다."""

@@ -35,7 +35,7 @@ def make_link():
     link.enable_pwm_min = 1800
     link.channels = {"roll": 1, "pitch": 2, "throttle": 3}
     link.trims = {axis: 1500 for axis in link.channels}
-    link.signs = {"roll": 1, "pitch": -1, "throttle": -1}
+    link.signs = {"roll": 1, "pitch": 1, "throttle": -1}
     link._armed = True
     link._mode = "ALT_HOLD"
     link._rc_values = {1: 1500, 2: 1500, 3: 1500, 4: 1500, 8: 1900}
@@ -114,14 +114,19 @@ class ReadyToReleaseTests(unittest.TestCase):
 
 
 class PwmConversionTests(unittest.TestCase):
-    def test_maps_body_commands_to_default_copter_stick_directions(self):
+    def test_maps_body_commands_to_configured_stick_directions(self):
         link = make_link()
 
         pwm = link.command_to_pwm(
             Command(forward=0.25, right=0.125, down=0.25)
         )
 
-        self.assertEqual(pwm, {1: 1550, 2: 1400, 3: 1400})
+        self.assertEqual(pwm, {1: 1550, 2: 1600, 3: 1400})
+
+    def test_backward_command_decreases_reversed_pitch_pwm(self):
+        link = make_link()
+
+        self.assertEqual(link.command_to_pwm(Command(forward=-0.25))[2], 1400)
 
     def test_large_command_is_limited_to_stick_endpoint(self):
         link = make_link()

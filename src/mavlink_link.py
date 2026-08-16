@@ -84,7 +84,7 @@ class MavlinkLink:
         }
         self.signs = {
             "roll": int(rc.get("roll_sign", 1)),
-            "pitch": int(rc.get("pitch_sign", -1)),
+            "pitch": int(rc.get("pitch_sign", 1)),
             "throttle": int(rc.get("throttle_sign", -1)),
         }
 

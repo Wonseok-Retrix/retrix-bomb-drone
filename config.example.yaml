@@ -207,10 +207,11 @@ mavlink:
     pwm_min: 1100
     pwm_max: 1900
 
-    # +오른쪽=roll PWM 증가, +전진=pitch PWM 감소, +하강=throttle PWM 감소.
+    # +오른쪽=roll PWM 증가, +전진=pitch PWM 증가, +하강=throttle PWM 감소.
+    # 아래 pitch_sign은 RC2_REVERSED=1이고 후진 스틱의 RC2 PWM이 감소하는 기체 기준입니다.
     # 기체가 반대로 움직이면 해당 축만 1/-1로 바꾸세요.
     roll_sign: 1
-    pitch_sign: -1
+    pitch_sign: 1
     throttle_sign: -1
 
 safety:

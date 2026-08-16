@@ -46,7 +46,7 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 감쇠 상태는 실행 로그의 `age`(정보의 나이)와 `x`(적용된 감쇠 비율)로 확인합니다.
 
 ```
-[OK] x=+0.42 y=-0.11 size=0.21 conf=0.78 age=0.35s x0.94 -> roll(RC1)=1560 pitch(RC2)=1480 throttle(RC3)=1488 | RC_OVERRIDE
+[OK] x=+0.42 y=-0.11 size=0.21 conf=0.78 age=0.35s x0.94 -> roll(RC1)=1560 pitch(RC2)=1520 throttle(RC3)=1488 | RC_OVERRIDE
 ```
 
 표시되는 PWM은 현재 추적 오차로 계산한 예상 출력입니다. 실제 전송 여부는 마지막의

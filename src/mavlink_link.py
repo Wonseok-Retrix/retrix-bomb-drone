@@ -69,10 +69,9 @@ def arducopter_mode_string(msg):
 
 
 class MavlinkLink:
-    def __init__(self, cfg, live=False):
+    def __init__(self, cfg):
         m = cfg["mavlink"]
         s = cfg["safety"]
-        self.live = live
         self.require_guided = s["require_guided"]
         self.require_armed = s["require_armed"]
 
@@ -124,8 +123,6 @@ class MavlinkLink:
 
     def _send_heartbeat(self):
         """ArduCopter가 컴패니언 링크를 감시할 수 있도록 1Hz heartbeat 전송."""
-        if not self.live:
-            return
         now = time.monotonic()
         if now - self._last_heartbeat < 1.0:
             return
@@ -156,9 +153,6 @@ class MavlinkLink:
 
     def send_velocity(self, cmd):
         """Command의 기체 기준 속도와 yaw rate를 ArduCopter에 전송."""
-        if not self.live:
-            return
-
         self.master.mav.set_position_target_local_ned_send(
             int(time.monotonic() * 1000) & 0xFFFFFFFF,  # time_boot_ms
             self.master.target_system,
@@ -177,8 +171,6 @@ class MavlinkLink:
 
     def statustext(self, text):
         """지상국(Mission Planner 등) 화면에 메시지를 띄웁니다."""
-        if not self.live:
-            return
         self.master.mav.statustext_send(
             mavutil.mavlink.MAV_SEVERITY_INFO, text.encode()[:50]
         )

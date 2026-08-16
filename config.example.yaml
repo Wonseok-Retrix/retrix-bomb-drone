@@ -183,8 +183,6 @@ mavlink:
   send_rate: 10
 
 safety:
-  # 실제 MAVLink 명령과 서보 출력은 실행 시 --live 옵션으로만 활성화됩니다.
-
   # GUIDED 모드일 때만 추적 명령을 보냄. 다른 모드로 바꾸면 즉시 정지 명령으로 전환
   require_guided: true
 

@@ -86,7 +86,7 @@ OBC의 기본 명령 한계는 좌우·전후 각각 `0.4m/s`, 상승·하강 `0
 프로그램은 안전상 스스로 시동하거나 GUIDED로 전환하지 않습니다.
 
 1. LOITER에서 조종자가 시동하고 이륙합니다.
-2. `track_and_follow.py --live`를 실행합니다.
+2. `track_and_follow.py`를 실행합니다.
 3. Mission Planner에서 GUIDED로 전환합니다.
 4. 이상 동작 시 조종기 스위치를 LOITER 또는 STABILIZE로 바꿉니다.
 

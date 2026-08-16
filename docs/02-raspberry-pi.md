@@ -121,7 +121,7 @@ http://drone.local:8080
 
 ---
 
-## 6. 부팅 시 LIVE 모드 자동 실행
+## 6. 부팅 시 추적 프로그램 자동 실행
 
 카메라, MAVLink, 드로퍼를 프로펠러 없이 모두 점검한 뒤 자동 실행 서비스를 등록합니다.
 
@@ -130,7 +130,7 @@ cd ~/ai-tracking-drone
 bash tools/install_autostart.sh
 ```
 
-서비스는 현재 계정과 저장소 경로를 자동으로 사용하며, 즉시 `track_and_follow.py --live`를 시작하고 이후 부팅 때마다 자동 실행합니다. 프로세스가 오류로 종료되면 5초 후 재시작합니다.
+서비스는 현재 계정과 저장소 경로를 자동으로 사용하며, 즉시 `track_and_follow.py`를 시작하고 이후 부팅 때마다 자동 실행합니다. 프로세스가 오류로 종료되면 5초 후 재시작합니다.
 
 ```bash
 systemctl status retrix-bomb-drone.service       # 상태 확인

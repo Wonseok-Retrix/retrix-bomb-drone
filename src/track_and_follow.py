@@ -3,7 +3,6 @@
 
     python3 src/track_and_follow.py                # config.yaml 사용
     python3 src/track_and_follow.py --config my.yaml
-    python3 src/track_and_follow.py --live         # 실제 명령 전송
 
 구조:
     [카메라 스레드]  검출 --> 추적 --> 목표 저장        (camera.fps 속도, 1~2 fps)
@@ -113,7 +112,6 @@ class VisionThread:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=os.path.join(ROOT, "config.yaml"))
-    ap.add_argument("--live", action="store_true", help="send commands to the drone")
     ap.add_argument("--no-mavlink", action="store_true", help="test the camera only")
     args = ap.parse_args()
 
@@ -124,17 +122,15 @@ def main():
     print(f"  Model        : {os.path.basename(cfg['camera']['model'])}")
     print(f"  Camera       : {cfg['camera']['fps']} fps / {cfg['camera'].get('rotation', 0)} deg")
     print(f"  Command rate : {cfg['mavlink']['send_rate']} Hz")
-    print(f"  Dropper      : {'active' if args.live else 'simulation'}")
-    print(f"  Mode         : {'*** LIVE ***' if args.live else 'DRY RUN (no commands sent)'}")
     print("=" * 60)
 
     buzzer = StatusBuzzer()
     detector = Detector(cfg)
     tracker = Tracker(cfg, detector.frame_size)
     controller = Controller(cfg["control"])
-    dropper = Dropper(cfg, live=args.live)
+    dropper = Dropper(cfg)
     judge = ReleaseJudge(cfg)
-    link = None if args.no_mavlink else MavlinkLink(cfg, live=args.live)
+    link = None if args.no_mavlink else MavlinkLink(cfg)
 
     vision = VisionThread(detector, tracker)
     vision.start()

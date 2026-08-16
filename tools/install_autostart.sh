@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 부팅 시 추적 프로그램을 LIVE 모드로 자동 실행하는 systemd 서비스 등록.
+# 부팅 시 추적 프로그램을 자동 실행하는 systemd 서비스 등록.
 # 저장소 안에서 실행하세요: bash tools/install_autostart.sh
 set -euo pipefail
 
@@ -44,7 +44,7 @@ printf '%s\n' \
   "User=${RUN_USER}" \
   'SupplementaryGroups=dialout gpio video' \
   "WorkingDirectory=${PROJECT_DIR}" \
-  "ExecStart=${PYTHON_BIN} ${MAIN_SCRIPT} --live" \
+  "ExecStart=${PYTHON_BIN} ${MAIN_SCRIPT}" \
   'Restart=always' \
   'RestartSec=5' \
   'KillSignal=SIGINT' \
@@ -64,7 +64,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now "${SERVICE_NAME}"
 
 echo
-echo "Installed: LIVE mode will start automatically at boot."
+echo "Installed: tracking will start automatically at boot."
 echo "Check status: systemctl status ${SERVICE_NAME}"
 echo "View logs: journalctl -u ${SERVICE_NAME} -f"
 echo "Disable autostart: bash tools/uninstall_autostart.sh"

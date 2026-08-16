@@ -23,9 +23,9 @@ import time
 
 
 class Dropper:
-    def __init__(self, cfg, live=False):
+    def __init__(self, cfg):
         d = cfg["dropper"]
-        self.simulate = not live
+        self.simulate = False
 
         self.closed_angle = d["closed_angle"]
         self.open_angle = d["open_angle"]
@@ -35,10 +35,6 @@ class Dropper:
         self._dropped = False
         self._close_at = None
         self._detach_at = None
-
-        if self.simulate:
-            print("[DROPPER] simulation mode (DRY RUN) - servo will not move")
-            return
 
         try:
             from gpiozero import AngularServo

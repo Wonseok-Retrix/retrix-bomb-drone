@@ -71,16 +71,15 @@ stale_hold ~ stale_stop         →   선형 감쇠 (속도 줄임)
 
 | 단계      | 검증 유형           | 실행 명령                                    | 주요 확인 및 검증 사항                                                            |
 | :------ | :-------------- | :--------------------------------------- | :----------------------------------------------------------------------- |
-| **1단계** | 책상 위 카메라 점검     | `python3 tools/preview.py`               | `http://drone.local:8080` 접속 후 목표물 이동 시 `right`, `fwd` 제어 수치 부호 정상 동작 확인 |
-| **2단계** | 모의 비행 (DRY RUN) | `python3 src/track_and_follow.py`        | 명령 계산 로그 확인, MAVLink 명령 전송 없음                                            |
-| **3단계** | 지상 구동 점검        | `python3 src/track_and_follow.py --live` | Arming  걸지 않은 상태로 GUIDED 전환 → 제어 신호 및 서보 반응 확인                           |
-| **4단계** | 실전 야외 비행        | `python3 src/track_and_follow.py --live` | LOITER 이륙·호버링 확인 → GUIDED 전환 → 자율 추적 비행                                  |
+| **1단계** | 책상 위 카메라 점검 | `python3 tools/preview.py` | `http://drone.local:8080` 접속 후 목표물 이동 시 `right`, `fwd` 제어 수치 부호 정상 동작 확인 |
+| **2단계** | 지상 구동 점검 | `python3 src/track_and_follow.py` | 프로펠러 분리 상태에서 MAVLink 연결, 모드 및 서보 반응 확인 |
+| **3단계** | 실전 야외 비행 | `python3 src/track_and_follow.py` | LOITER 이륙·호버링 확인 → GUIDED 전환 → 자율 추적 비행 |
 
-### 4단계 실전 비행 상세 지침
+### 3단계 실전 비행 상세 지침
 
 1. **안전거리 확보**: 장애물이 없는 넓은 야외에서 조종자 및 관람자와 20m 이상 안전거리를 확보합니다.
 2. **이륙 및 수동 정지비행**: 조종기로 **LOITER** 모드에서 시동을 걸어 고도 5~8m로 안전하게 이륙시킨 후 기체 안정성을 확인합니다.
-3. **스크립트 실행**: SSH 터미널에서 `python3 src/track_and_follow.py --live` 명령을 실행합니다 (`GUIDED 아님` 로그 확인).
+3. **스크립트 실행**: SSH 터미널에서 `python3 src/track_and_follow.py` 명령을 실행합니다 (`GUIDED 아님` 로그 확인).
 4. **GUIDED 전환**: Mission Planner의 Actions 화면에서 **GUIDED**로 전환하여 자율 추적을 시작합니다. 운용 전에 조종기 모드 스위치로 즉시 LOITER 복귀가 되는지 확인하세요.
 5. **수동 제어권 확보 (비상 조치)**: 기체 비행 이상 발생 시 **즉시 조종기 스위치를 LOITER 또는 STABILIZE로 전환**하세요.
 

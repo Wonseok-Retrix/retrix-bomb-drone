@@ -40,7 +40,7 @@ def main():
     print(f"  Pulse width : {d['min_pulse_us']} ~ {d['max_pulse_us']} us")
     print("=" * 52)
 
-    dropper = Dropper(cfg, live=True)
+    dropper = Dropper(cfg)
     if dropper.simulate:
         print("\nCould not initialize the servo. Check:")
         print("  - gpiozero installed?  sudo apt install python3-gpiozero python3-lgpio")

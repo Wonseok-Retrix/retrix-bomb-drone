@@ -32,12 +32,13 @@ python3 tools/check_mavlink.py
 # 4. 3단계 점검: 서보 드로퍼 동작 확인 (2일차, 책상 위 점검)
 python3 tools/check_dropper.py
 
-# 5. 모의 비행 (DRY RUN: 계산만 수행, 실제 명령 전송 없음)
+# 5. 추적 실행 (지상 점검 시 프로펠러 분리, 실전 비행 전 docs/04 숙지)
 python3 src/track_and_follow.py
-
-# 6. 실전 비행 (docs/04 숙지 후 프로펠러 장착 및 --live 실행)
-python3 src/track_and_follow.py --live
 ```
+
+> `track_and_follow.py`는 별도 실행 모드 없이 MAVLink와 GPIO 출력을 활성화합니다.
+> non-GUIDED 또는 disarmed 상태에서는 0 속도만 전송하지만, 지상 점검 시에는 반드시
+> 프로펠러를 분리하세요.
 
 ---
 
@@ -59,8 +60,8 @@ src/
 tools/
   install.sh                  라즈베리파이 자동 환경 설정 스크립트
   init_config.sh              config.yaml 최초 생성 (기존 설정은 유지)
-  install_autostart.sh        부팅 시 LIVE 모드 자동 실행 서비스 등록
-  uninstall_autostart.sh      LIVE 모드 자동 실행 서비스 해제
+  install_autostart.sh        부팅 시 추적 프로그램 자동 실행 서비스 등록
+  uninstall_autostart.sh      추적 프로그램 자동 실행 서비스 해제
   check_camera.py             1단계 점검: 카메라 및 AI 모델 작동 테스트
   check_mavlink.py            2단계 점검: FC MAVLink 연결 상태 점검
   test_obc_heartbeat.py       OBC heartbeat/디버그 메시지의 GCS 라우팅 점검
@@ -79,7 +80,7 @@ assets/
 | 일차 | 일정 | 주요 내용 | 목표 |
 | :--- | :--- | :--- | :--- |
 | **1일차** | **오전** | 하드웨어 조립, 라즈베리파이 OS 세팅, 기본 모델 물체 검출 점검 | AI 카메라 기반 객체 감지 파이프라인 이해 |
-| | **오후** | MAVLink 통신 연결, 모의 비행(DRY RUN), 지상 제어 테스트 및 속도 튜닝 | MAVLink 속도 제어 및 P 제어기 동작 이해 |
+| | **오후** | MAVLink 통신 연결, 지상 제어 테스트 및 속도 튜닝 | MAVLink 속도 제어 및 P 제어기 동작 이해 |
 | **2일차** | **오전** | 실전 비행 추적 테스트 및 제어 파라미터 최적화 | 지상 목표물 자율 추적 비행 완성 |
 | | **오후** | 맞춤 데이터 수집 → Colab 학습 → 커스텀 모델 탑재 및 서보 투하 연동 | 커스텀 과녁 인식 및 자동 물품 투하 비행 완성 |
 

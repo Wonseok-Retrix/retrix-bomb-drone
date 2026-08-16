@@ -23,6 +23,7 @@ import os
 import sys
 import threading
 import time
+from collections import deque
 
 import yaml
 
@@ -61,7 +62,7 @@ class VisionThread:
         self._target_detected = False
         self._n_det = 0
         self._updated_at = 0.0
-        self._frame_id = 0
+        self._frames = deque()
         self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True)
 
@@ -84,7 +85,7 @@ class VisionThread:
                 )
                 self._n_det = len(detections)
                 self._updated_at = time.monotonic()
-                self._frame_id += 1
+                self._frames.append((target, len(detections)))
 
     def latest(self, stall_timeout):
         """최신 목표, 현재 프레임 검출 여부와 카메라 상태를 돌려줍니다.
@@ -97,11 +98,12 @@ class VisionThread:
             target_detected = self._target_detected
             n_det = self._n_det
             updated_at = self._updated_at
-            frame_id = self._frame_id
+            frames = list(self._frames)
+            self._frames.clear()
         if updated_at == 0.0 or time.monotonic() - updated_at > stall_timeout:
             # 카메라가 프레임을 아예 못 주고 있음
-            return None, False, n_det, True, frame_id
-        return target, target_detected, n_det, False, frame_id
+            return None, False, n_det, True, frames
+        return target, target_detected, n_det, False, frames
 
     def stop(self):
         self._running = False
@@ -142,17 +144,16 @@ def main():
 
     last_status = 0.0
     was_ready = False
-    last_reported_frame = 0
     was_stalled = True
 
     try:
         while True:
             loop_start = time.monotonic()
 
-            target, target_detected, n_det, stalled, frame_id = vision.latest(
+            target, target_detected, n_det, stalled, frame_updates = vision.latest(
                 stall_timeout
             )
-            new_frame = frame_id != last_reported_frame
+            new_frame = bool(frame_updates)
             age = target.age if target is not None else float("inf")
             cmd = controller.compute(target, age)
             pwm_status = "pwm=DISABLED"
@@ -211,13 +212,27 @@ def main():
                 if link is not None:
                     link.statustext(f"DROPPER RESET: {reset_reason}")
 
-            # 부저와 로그는 동일한 새 카메라 프레임마다 각각 한 번만 처리합니다.
-            if new_frame:
-                _log(target, pwm_status, reason, n_det, stalled, controller)
+            # 카메라가 메인 루프보다 빨라도 추론 프레임별 로그를 빠뜨리지 않습니다.
+            for frame_target, frame_n_det in frame_updates:
+                frame_age = frame_target.age if frame_target is not None else 0.0
+                frame_cmd = controller.compute(frame_target, frame_age)
+                if link is None:
+                    frame_pwm_status = "pwm=DISABLED"
+                else:
+                    frame_pwm_status = link.format_pwm(
+                        link.command_to_pwm(frame_cmd)
+                    )
+                _log(
+                    frame_target,
+                    frame_pwm_status,
+                    reason,
+                    frame_n_det,
+                    False,
+                    controller,
+                )
                 print(f"     dropper: {judge.reason}"
                       f"{' | RELEASED' if dropper.dropped else ''}")
-                last_reported_frame = frame_id
-            elif stalled and not was_stalled:
+            if not new_frame and stalled and not was_stalled:
                 _log(target, pwm_status, reason, n_det, stalled, controller)
             was_stalled = stalled
 

@@ -63,10 +63,10 @@
 
 ## 4. 라즈베리파이 탑재 및 모델 설정
 
-Colab에서 다운로드한 `icon_tracker_imx500.zip` 파일을 라즈베리파이로 복사합니다. **내 PC의 터미널**에서 실행하세요 (파일이 받아진 폴더 기준):
+Colab에서 다운로드한 양자화된 모델이 담긴 `zip` 파일을 라즈베리파이로 복사합니다. **내 PC의 터미널**에서 실행하세요 (파일이 받아진 폴더 기준):
 
 ```bash
-scp icon_tracker_imx500.zip pi@drone.local:~/
+scp [yyyyMMdd_HHmmss]_imx500.zip pi@[dronename].local:~/
 ```
 
 > `drone.local` 접속이 안 되면 라즈베리파이에서 `hostname -I`로 IP를 확인한 뒤 `scp icon_tracker_imx500.zip pi@192.168.x.x:~/` 형태로 실행하세요.

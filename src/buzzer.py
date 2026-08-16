@@ -1,19 +1,16 @@
-"""Passive buzzer status sounds, played without blocking the flight loop."""
+"""Active buzzer status sounds, played without blocking the flight loop."""
 
 import threading
 import time
 
 
 class StatusBuzzer:
-    """Play the latest requested status pattern on a passive GPIO buzzer."""
+    """Play the latest requested status pattern on an active GPIO buzzer."""
 
     PIN = 23  # BCM GPIO23, physical pin 16
-    FREQUENCY = 1000
     BEEP_SECONDS = 0.06
     CYCLE_INTERVAL = 0.13
-    MELODY_NOTE_SECONDS = 0.12
-    MELODY_GAP_SECONDS = 0.03
-    STARTUP_MELODY = (262, 294, 330, 349, 392)  # C4, D4, E4, F4, G4
+    STARTUP_BEEPS = 3
 
     def __init__(self):
         self.enabled = True
@@ -25,17 +22,14 @@ class StatusBuzzer:
         self._thread = None
 
         try:
-            from gpiozero import PWMOutputDevice
+            from gpiozero import DigitalOutputDevice
 
-            self._output = PWMOutputDevice(
-                self.PIN,
-                active_high=True,
-                initial_value=0,
-                frequency=self.FREQUENCY,
+            self._output = DigitalOutputDevice(
+                self.PIN, active_high=True, initial_value=False
             )
             self._thread = threading.Thread(target=self._loop, daemon=True)
             self._thread.start()
-            print(f"[BUZZER] passive buzzer ready on GPIO{self.PIN}")
+            print(f"[BUZZER] active buzzer ready on GPIO{self.PIN}")
         except Exception as e:
             # A buzzer failure must not stop tracking or flight control.
             print(f"[BUZZER] could not initialize ({e}) - sounds disabled")
@@ -55,7 +49,7 @@ class StatusBuzzer:
             count = 3 if release_waiting else 1
             gap = max(0.0, self.CYCLE_INTERVAL - self.BEEP_SECONDS)
             pattern = tuple(
-                (self.FREQUENCY, self.BEEP_SECONDS, gap if i < count - 1 else 0.0)
+                (self.BEEP_SECONDS, gap if i < count - 1 else 0.0)
                 for i in range(count)
             )
 
@@ -65,9 +59,10 @@ class StatusBuzzer:
             self._condition.notify_all()
 
     def _loop(self):
+        gap = max(0.0, self.CYCLE_INTERVAL - self.BEEP_SECONDS)
         startup = tuple(
-            (frequency, self.MELODY_NOTE_SECONDS, self.MELODY_GAP_SECONDS)
-            for frequency in self.STARTUP_MELODY
+            (self.BEEP_SECONDS, gap if i < self.STARTUP_BEEPS - 1 else 0.0)
+            for i in range(self.STARTUP_BEEPS)
         )
         self._play(startup, generation=None)
 
@@ -86,11 +81,10 @@ class StatusBuzzer:
         self._off()
 
     def _play(self, pattern, generation):
-        for frequency, duration, gap in pattern:
+        for duration, gap in pattern:
             if not self._wait(0.0, generation):
                 return
-            self._output.frequency = frequency
-            self._output.value = 0.5
+            self._output.on()
             if not self._wait(duration, generation):
                 self._off()
                 return
@@ -112,7 +106,7 @@ class StatusBuzzer:
 
     def _off(self):
         if self._output is not None:
-            self._output.value = 0
+            self._output.off()
 
     def stop(self):
         """Silence and release the GPIO device."""

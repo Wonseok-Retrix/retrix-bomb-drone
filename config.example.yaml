@@ -131,8 +131,6 @@ dropper:
   open_angle: 80       # 물건을 놓는 각도
 
   open_seconds: 1.5    # 이 시간 동안 열어뒀다가 스스로 닫힙니다
-  once: true           # 한 비행에 한 번만 투하 (false 면 조건 맞을 때마다)
-
   # 서보마다 펄스 폭이 다릅니다. 각도가 안 맞으면 이 값을 조절하세요
   min_pulse_us: 500
   max_pulse_us: 2500

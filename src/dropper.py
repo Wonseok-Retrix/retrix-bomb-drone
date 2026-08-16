@@ -30,7 +30,6 @@ class Dropper:
         self.closed_angle = d["closed_angle"]
         self.open_angle = d["open_angle"]
         self.open_seconds = d["open_seconds"]
-        self.once = d["once"]
 
         self._servo = None
         self._dropped = False
@@ -67,7 +66,7 @@ class Dropper:
 
     def drop(self):
         """물건을 놓습니다. 실제로 놓았으면 True."""
-        if self.once and self._dropped:
+        if self._dropped:
             return False
         print("[DROPPER] ***** RELEASE *****")
         self._move(self.open_angle)
@@ -92,7 +91,7 @@ class Dropper:
             self._detach_at = None
 
     def reset(self):
-        """다시 한 번 쓸 수 있게 '투하했음' 표시를 지웁니다 (지상에서만)."""
+        """다시 한 번 투하할 수 있도록 닫고 투하 상태를 초기화합니다."""
         self._dropped = False
         self.close()
 

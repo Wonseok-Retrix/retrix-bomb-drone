@@ -40,6 +40,11 @@ class ReleaseJudge:
         """투하 조건을 만족해 정렬 유지 시간을 재는 중인지 반환합니다."""
         return self._good_since is not None
 
+    def reset(self):
+        """새 목표를 다시 투하 판단할 수 있도록 대기 상태를 초기화합니다."""
+        self._good_since = None
+        self.reason = "WAITING"
+
     def update(self, target, ready):
         """조건을 다 만족하면 딱 한 번 True. 매 루프 호출하세요."""
         ok, self.reason = self._check(target, ready)

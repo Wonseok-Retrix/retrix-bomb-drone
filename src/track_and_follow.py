@@ -145,10 +145,10 @@ def main():
     stall_timeout = cfg["camera"]["stall_timeout"]
     status_interval = max(1.0, float(cfg["mavlink"].get("status_interval", 5.0)))
 
-    last_log = 0.0
     last_status = 0.0
     was_ready = False
-    last_buzzer_frame = 0
+    last_reported_frame = 0
+    was_stalled = True
 
     try:
         while True:
@@ -157,6 +157,7 @@ def main():
             target, target_detected, n_det, stalled, frame_id = vision.latest(
                 stall_timeout
             )
+            new_frame = frame_id != last_reported_frame
             age = target.age if target is not None else float("inf")
             cmd = controller.compute(target, age)
 
@@ -185,26 +186,37 @@ def main():
 
             # 과녁 위에 잘 정렬됐으면 투하합니다. 판단은 release.py 가 합니다.
             release_now = judge.update(target, ready)
-            if frame_id != last_buzzer_frame:
+            if new_frame:
                 buzzer.notify_cycle(
                     tracking=target_detected and not stalled,
                     release_waiting=(
                         target_detected and judge.holding and not dropper.dropped
                     ),
                 )
-                last_buzzer_frame = frame_id
 
             if release_now and dropper.drop():
                 if link is not None:
                     link.statustext("DROP")
             dropper.update()   # 열어둔 시간이 지나면 스스로 닫힙니다
 
-            now = time.monotonic()
-            if now - last_log > 0.5:
+            # 투하한 목표가 사라지거나 GUIDED 제어가 해제되면 다음 투하를 재무장합니다.
+            if dropper.dropped and (target is None or not ready):
+                reset_reason = "TARGET_LOST" if target is None else "CONTROL_NOT_READY"
+                print(f"[DROPPER] reset ({reset_reason}) - ready for next target")
+                dropper.reset()
+                judge.reset()
+                if link is not None:
+                    link.statustext(f"DROPPER RESET: {reset_reason}")
+
+            # 부저와 로그는 동일한 새 카메라 프레임마다 각각 한 번만 처리합니다.
+            if new_frame:
                 _log(target, cmd, reason, n_det, stalled, controller)
                 print(f"     dropper: {judge.reason}"
                       f"{' | RELEASED' if dropper.dropped else ''}")
-                last_log = now
+                last_reported_frame = frame_id
+            elif stalled and not was_stalled:
+                _log(target, cmd, reason, n_det, stalled, controller)
+            was_stalled = stalled
 
             time.sleep(max(0.0, period - (time.monotonic() - loop_start)))
 

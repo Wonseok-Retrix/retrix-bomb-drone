@@ -36,7 +36,6 @@ def main():
 
     print("Check that measured fps is close to the configured value (%d).\n" % cfg["camera"]["fps"])
 
-    last = 0.0
     frames = 0
     fps_t0 = time.monotonic()
     fps = 0.0
@@ -50,16 +49,14 @@ def main():
                 fps = frames / (now - fps_t0)
                 frames, fps_t0 = 0, now
 
-            if now - last > 0.5:
-                if results:
-                    counts = Counter(d.label for d in results)
-                    summary = ", ".join(f"{k}x{v}" for k, v in counts.items())
-                    best = max(results, key=lambda d: d.conf)
-                    detail = f"best: {best.label} {best.conf:.2f} box={best.box}"
-                else:
-                    summary, detail = "no detections", ""
-                print(f"[{fps:4.1f} fps] {summary:34s} | {detail}")
-                last = now
+            if results:
+                counts = Counter(d.label for d in results)
+                summary = ", ".join(f"{k}x{v}" for k, v in counts.items())
+                best = max(results, key=lambda d: d.conf)
+                detail = f"best: {best.label} {best.conf:.2f} box={best.box}"
+            else:
+                summary, detail = "no detections", ""
+            print(f"[{fps:4.1f} fps] {summary:34s} | {detail}")
     except KeyboardInterrupt:
         print("\nStopped")
     finally:

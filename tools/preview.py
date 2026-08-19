@@ -137,7 +137,7 @@ def local_ip():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--fps", type=int, help="temporarily override inference frame rate")
+    ap.add_argument("--fps", type=float, help="temporarily override inference frame rate")
     ap.add_argument("--port", type=int, default=8080)
     args = ap.parse_args()
 

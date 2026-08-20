@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 
 from track_and_follow import load_config  # noqa: E402
 from detector import Detector  # noqa: E402
+from tracker import resolve_target_classes  # noqa: E402
 
 
 def main():
@@ -26,11 +27,13 @@ def main():
     print("Uploading firmware to the camera. The first run may take 1-2 minutes...\n")
 
     det = Detector(cfg)
+    targets = resolve_target_classes(cfg)
     print(f"Resolution: {det.frame_size}, labels: {len(det.labels)}")
-    print(f"Target class: '{cfg['detection']['target_class']}'\n")
+    print(f"Target classes: {targets}\n")
 
-    if cfg["detection"]["target_class"] not in det.labels:
-        print("!! WARNING: target_class is not in the label file. Available labels include:")
+    missing = [c for c in targets if c not in det.labels]
+    if missing:
+        print("!! WARNING: target_classes not in the label file. Available labels include:")
         print("   " + ", ".join(det.labels[:20]))
         print()
 

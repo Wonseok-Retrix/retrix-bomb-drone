@@ -35,7 +35,7 @@ from detector import Detector
 from dropper import Dropper
 from mavlink_link import MavlinkLink
 from release import ReleaseJudge
-from tracker import Tracker
+from tracker import Tracker, resolve_target_classes
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -81,7 +81,7 @@ class VisionThread:
             with self._lock:
                 self._target = target
                 self._target_detected = any(
-                    d.label == self.tracker.target_class for d in detections
+                    d.label in self.tracker.target_classes for d in detections
                 )
                 self._n_det = len(detections)
                 self._updated_at = time.monotonic()
@@ -119,7 +119,7 @@ def main():
     cfg = load_config(args.config)
 
     print("=" * 60)
-    print(f"  Target class : {cfg['detection']['target_class']}")
+    print(f"  Target classes : {', '.join(resolve_target_classes(cfg))}")
     print(f"  Model        : {os.path.basename(cfg['camera']['model'])}")
     print(f"  Camera       : {cfg['camera']['fps']} fps / {cfg['camera'].get('rotation', 0)} deg")
     print(f"  Command rate : {cfg['mavlink']['send_rate']} Hz")

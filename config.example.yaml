@@ -36,10 +36,13 @@ camera:
 
 
 detection:
-  # 쫓아갈 물체의 라벨 이름. 라벨 파일에 있는 이름과 정확히 같아야 함
+  # 쫓아갈 물체의 라벨 이름(들). 라벨 파일에 있는 이름과 정확히 같아야 함
   # 예: person, sports ball, bottle ...
-  target_class: drone
-  # target_class: person
+  # 여러 개를 나열하면 그 중 하나라도 보이면 추적 + 투하(서보) 대상이 됩니다.
+  target_classes:
+    - drone
+    - dssadasd
+  # (구 설정) 하나만 쓸 때: target_class: drone 도 계속 동작합니다
 
   # 확신도 임계값 (0.0 ~ 1.0)
   # 낮추면 잘 찾지만 오검출↑ / 높이면 정확하지만 자주 놓침

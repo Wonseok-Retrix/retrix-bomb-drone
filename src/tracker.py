@@ -10,6 +10,18 @@
 import time
 
 
+def resolve_target_classes(cfg):
+    """config 에서 쫓아갈 클래스 이름 목록을 꺼냅니다.
+
+    여러 클래스를 지원하는 target_classes (리스트) 를 우선 쓰고,
+    없으면 구 설정의 target_class (단일 문자열) 를 씁니다.
+    """
+    classes = cfg["detection"].get("target_classes")
+    if classes is None:
+        classes = [cfg["detection"]["target_class"]]
+    return list(classes)
+
+
 class Target:
     """추적 중인 목표 하나. 화면 기준 정규화 좌표를 제공합니다."""
 
@@ -45,7 +57,7 @@ class Target:
 class Tracker:
     def __init__(self, cfg, frame_size):
         t = cfg["tracking"]
-        self.target_class = cfg["detection"]["target_class"]
+        self.target_classes = set(resolve_target_classes(cfg))
         self.smoothing = t["smoothing"]
         self.lost_timeout = t["lost_timeout"]
         self.select = t["select"]
@@ -57,7 +69,7 @@ class Tracker:
 
     def update(self, detections):
         """검출 리스트를 넣으면 현재 Target 또는 None 을 돌려줍니다."""
-        candidates = [d for d in detections if d.label == self.target_class]
+        candidates = [d for d in detections if d.label in self.target_classes]
         now = time.monotonic()
 
         if candidates:

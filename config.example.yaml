@@ -189,3 +189,8 @@ safety:
 
   # 시동(arm)이 걸려있을 때만 명령을 보냄
   require_armed: false
+
+  # CH8(RC 보조 채널)이 HIGH여야 추적 명령·투하(서보)를 허용합니다. (기본, 안전)
+  # RC 수신기가 없는 벤치 테스트에서는 false 로 두면 CH8 게이트를 우회합니다.
+  # ★ 실비행 전에는 반드시 true 로 되돌리세요 ★
+  require_release_switch: true

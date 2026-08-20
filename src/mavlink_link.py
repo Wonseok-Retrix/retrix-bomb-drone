@@ -68,6 +68,8 @@ class MavlinkLink:
         s = cfg["safety"]
         rc = m.get("rc_override", {})
         self.require_armed = s["require_armed"]
+        # RC 없이 벤치 테스트할 때 CH8 게이트를 우회하는 옵션 (기본 True = 안전).
+        self.require_release_switch = bool(s.get("require_release_switch", True))
         self.rc_timeout = float(rc.get("input_timeout", 0.5))
         self.pwm_min = int(rc.get("pwm_min", 1100))
         self.pwm_max = int(rc.get("pwm_max", 1900))
@@ -194,20 +196,26 @@ class MavlinkLink:
         """시동 상태에서 OBC가 조종기를 대신 입력해도 되는지 반환합니다."""
         if self.require_armed and not self._armed:
             return False, "WAIT_ARM"
-        if time.monotonic() - self._last_rc > self.rc_timeout:
-            return False, "RC_INPUT_STALE"
-        if self._rc_values.get(self.enable_channel, 0) < self.enable_pwm_min:
-            return False, "RC_OVERRIDE_DISABLED"
+        if self.require_release_switch:
+            if time.monotonic() - self._last_rc > self.rc_timeout:
+                return False, "RC_INPUT_STALE"
+            if self._rc_values.get(self.enable_channel, 0) < self.enable_pwm_min:
+                return False, "RC_OVERRIDE_DISABLED"
         if self._override_active:
             return True, "RC_OVERRIDE"
         return True, "RC_OVERRIDE_READY"
 
     def ready_to_release(self):
-        """시동·비행 모드와 무관하게 CH8 투하 허용 상태를 반환합니다."""
-        if time.monotonic() - self._last_rc > self.rc_timeout:
-            return False, "RC_INPUT_STALE"
-        if self._rc_values.get(self.enable_channel, 0) < self.enable_pwm_min:
-            return False, "RELEASE_DISABLED"
+        """시동·비행 모드와 무관하게 CH8 투하 허용 상태를 반환합니다.
+
+        require_release_switch 가 False 면 CH8 스위치와 RC 입력 상태를 보지 않고
+        항상 허용합니다 (RC 없는 벤치 테스트용).
+        """
+        if self.require_release_switch:
+            if time.monotonic() - self._last_rc > self.rc_timeout:
+                return False, "RC_INPUT_STALE"
+            if self._rc_values.get(self.enable_channel, 0) < self.enable_pwm_min:
+                return False, "RELEASE_DISABLED"
         return True, "RELEASE_ENABLED"
 
     # ---------- 명령 ----------

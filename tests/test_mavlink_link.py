@@ -28,6 +28,7 @@ from mavlink_link import MavlinkLink
 def make_link():
     link = MavlinkLink.__new__(MavlinkLink)
     link.require_armed = True
+    link.require_release_switch = True
     link.rc_timeout = 0.5
     link.pwm_min = 1100
     link.pwm_max = 1900
@@ -111,6 +112,29 @@ class ReadyToReleaseTests(unittest.TestCase):
         link = make_link()
 
         self.assertEqual(link.ready_to_release(), (False, "RC_INPUT_STALE"))
+
+    @patch("mavlink_link.time.monotonic", return_value=10.0)
+    def test_release_switch_bypass_allows_release_with_ch8_low(self, _):
+        link = make_link()
+        link.require_release_switch = False
+        link._rc_values[8] = 0
+
+        self.assertEqual(link.ready_to_release(), (True, "RELEASE_ENABLED"))
+
+    @patch("mavlink_link.time.monotonic", return_value=11.0)
+    def test_release_switch_bypass_allows_release_with_stale_rc(self, _):
+        link = make_link()
+        link.require_release_switch = False
+
+        self.assertEqual(link.ready_to_release(), (True, "RELEASE_ENABLED"))
+
+    @patch("mavlink_link.time.monotonic", return_value=10.0)
+    def test_release_switch_bypass_allows_command_with_ch8_low(self, _):
+        link = make_link()
+        link.require_release_switch = False
+        link._rc_values[8] = 0
+
+        self.assertEqual(link.ready_to_command(), (True, "RC_OVERRIDE_READY"))
 
 
 class PwmConversionTests(unittest.TestCase):
